@@ -90,3 +90,8 @@ create policy "payments_read" on public.payments for select using(user_id=auth.u
 create policy "payments_admin" on public.payments for all using(public.is_admin()) with check(public.is_admin());
 create policy "communications_read" on public.communications for select using(auth.uid() is not null and is_archived=false);
 create policy "communications_admin" on public.communications for all using(public.is_admin()) with check(public.is_admin());
+
+-- Migration policy: players imported from the existing club roster are permanent.
+-- Do not delete their existing registration/history. Import the existing users first,
+-- then use the admin migration statement below to approve them as permanent.
+-- This intentionally does not auto-promote newly registered users.
