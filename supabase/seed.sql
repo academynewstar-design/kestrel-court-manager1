@@ -17,19 +17,19 @@ where not exists(select 1 from public.sessions x where x.location_id=l.id and x.
 insert into public.sessions (sport_id, location_id, session_date, start_time, end_time, capacity, price, payment_email, payment_first)
 select s.id,l.id,d::date,'19:00','21:00',18,6,'kheynand@gmail.com',false
 from public.sports s cross join public.locations l cross join generate_series('2026-10-06'::date,'2026-12-31'::date,'7 days') d
-where s.name='Volleyball' and l.name='École élémentaire La Pommeraie'
+where s.name='volleyball' and l.name='École élémentaire La Pommeraie'
 on conflict do nothing;
 
 insert into public.sessions (sport_id, location_id, session_date, start_time, end_time, capacity, price, payment_email, payment_first)
 select s.id,l.id,d::date,'19:00','21:00',18,6,'kheynand@gmail.com',false
 from public.sports s cross join public.locations l cross join generate_series('2026-10-08'::date,'2026-12-31'::date,'7 days') d
-where s.name='Volleyball' and l.name='École élémentaire La Pommeraie'
+where s.name='volleyball' and l.name='École élémentaire La Pommeraie'
 on conflict do nothing;
 
 insert into public.sessions (sport_id, location_id, session_date, start_time, end_time, capacity, price, payment_email, payment_first)
 select s.id,l.id,d::date,'18:30','21:00',18,7,'academynewstar@gmail.com',true
 from public.sports s cross join public.locations l cross join generate_series('2026-10-05'::date,'2026-12-28'::date,'7 days') d
-where s.name='Volleyball' and l.name='Ange Gabriel Elementary School'
+where s.name='volleyball' and l.name='Ange Gabriel Elementary School'
 on conflict do nothing;
 
 
