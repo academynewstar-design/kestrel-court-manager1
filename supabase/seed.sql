@@ -31,3 +31,47 @@ select s.id,l.id,d::date,'18:30','21:00',18,7,'academynewstar@gmail.com',true
 from public.sports s cross join public.locations l cross join generate_series('2026-10-05'::date,'2026-12-28'::date,'7 days') d
 where s.name='Volleyball' and l.name='Ange Gabriel Elementary School'
 on conflict do nothing;
+
+
+-- Legacy permanent player roster: preserve existing registrations during migration
+insert into public.legacy_player_roster (full_name, player_type) values
+('Shoaib','permanent'),
+('Vikram Sudera','permanent'),
+('Navpreet','permanent'),
+('Sagar','permanent'),
+('Anbu','permanent'),
+('Pankaj Mahindru','permanent'),
+('MAULIK','permanent'),
+('Suganya AR','permanent'),
+('Siva Oakville','permanent'),
+('Nish Shah','permanent'),
+('Narsi','permanent'),
+('Nisha','permanent'),
+('Dharini','permanent'),
+('Sangeethaa','permanent'),
+('Mez','permanent'),
+('Manjit Singh','permanent'),
+('Deepak Pandey','permanent'),
+('Sanjeev','permanent'),
+('Vyom','permanent'),
+('Abdul Rahman','permanent'),
+('Ashish Patel','permanent'),
+('Twisha','permanent'),
+('Teja','permanent'),
+('Keith','permanent'),
+('Sathish','permanent'),
+('Sundari Natrajan','permanent'),
+('Amol','permanent'),
+('Shaun','permanent'),
+('Suhas Patha','permanent'),
+('Praveen','permanent'),
+('kheynand','permanent'),
+('Bala','permanent'),
+('Ushma','permanent'),
+('Srinivas','permanent'),
+('Durlabh','permanent'),
+('Mahesh Nandam','permanent'),
+('Pooja','permanent'),
+('Chirag','permanent'),
+('Vihari','permanent')
+on conflict (full_name) do update set player_type='permanent';
