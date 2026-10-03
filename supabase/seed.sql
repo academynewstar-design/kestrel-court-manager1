@@ -75,3 +75,16 @@ insert into public.legacy_player_roster (full_name, player_type) values
 ('Chirag','permanent'),
 ('Vihari','permanent')
 on conflict (full_name) do update set player_type='permanent';
+
+
+-- Registration/payment deadlines for the seeded recurring sessions.
+update public.sessions x
+set registration_open_at = (x.session_date + x.start_time) - interval '44 hours',
+    registration_deadline = (x.session_date + x.start_time) - interval '44 hours',
+    payment_deadline = (x.session_date + x.start_time) - interval '8 hours'
+where x.location_id=(select id from public.locations where name='École élémentaire La Pommeraie');
+
+update public.sessions x
+set registration_open_at = ((x.session_date - 3) + time '23:50'),
+    payment_deadline = null
+where x.location_id=(select id from public.locations where name='Ange Gabriel Elementary School');
