@@ -172,3 +172,28 @@ drop policy if exists "registrations_own_update" on public.registrations;
 create policy "registrations_own_update" on public.registrations for update
 using (user_id=auth.uid() or public.is_admin())
 with check (public.is_admin() or (user_id=auth.uid() and status in ('cancelled','pending','waitlist')));
+
+
+-- Prevent non-admin users from changing their own approval/type.
+create or replace function public.prevent_player_type_self_change()
+returns trigger language plpgsql security definer set search_path=public as $$
+begin
+  if auth.uid() is not null and auth.uid() = old.id and not public.is_admin() then
+    new.player_type := old.player_type;
+    new.player_type_status := old.player_type_status;
+    new.requested_player_type := old.requested_player_type;
+    new.is_admin := old.is_admin;
+  end if;
+  return new;
+end;
+$$;
+drop trigger if exists protect_player_type on public.profiles;
+create trigger protect_player_type before update on public.profiles
+for each row execute function public.prevent_player_type_self_change();
+
+drop policy if exists "registrations_own_update" on public.registrations;
+drop policy if exists "registrations_own_insert" on public.registrations;
+create policy "registrations_dropin_insert" on public.registrations for insert
+with check (user_id=auth.uid() and exists(select 1 from public.profiles p where p.id=auth.uid() and p.player_type='dropin' and p.player_type_status='approved'));
+drop policy if exists "absences_insert" on public.absences;
+drop policy if exists "absences_update" on public.absences;
