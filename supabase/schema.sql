@@ -107,3 +107,68 @@ create table if not exists public.legacy_player_roster (
 );
 alter table public.legacy_player_roster enable row level security;
 create policy "legacy roster admin only" on public.legacy_player_roster for all using (public.is_admin()) with check (public.is_admin());
+
+
+-- Secure registration and absence workflows
+create or replace function public.register_dropin(p_session_id bigint)
+returns text
+language plpgsql
+security definer
+set search_path=public
+as $$
+declare
+  ptype text; s public.sessions%rowtype; confirmed_count integer;
+begin
+  select player_type into ptype from public.profiles where id=auth.uid();
+  if ptype <> 'dropin' then raise exception 'Only approved drop-in players can register for drop-in sessions'; end if;
+  select * into s from public.sessions where id=p_session_id;
+  if not found then raise exception 'Session not found'; end if;
+  if s.status='closed' then raise exception 'Registration is closed'; end if;
+  if s.registration_open_at is not null and now() < s.registration_open_at then raise exception 'Registration is not open yet'; end if;
+  if s.registration_deadline is not null and now() > s.registration_deadline then raise exception 'Registration deadline has passed'; end if;
+  if exists(select 1 from public.registrations where user_id=auth.uid() and session_id=p_session_id and status in ('pending','confirmed','waitlist')) then
+    return 'already_registered';
+  end if;
+  select count(*) into confirmed_count from public.registrations where session_id=p_session_id and status='confirmed';
+  if confirmed_count >= s.capacity then
+    insert into public.registrations(user_id,session_id,status,payment_status) values(auth.uid(),p_session_id,'waitlist','unpaid')
+    on conflict(user_id,session_id) do update set status='waitlist',payment_status='unpaid';
+    return 'waitlist';
+  end if;
+  insert into public.registrations(user_id,session_id,status,payment_status)
+  values(auth.uid(),p_session_id,case when s.payment_first then 'pending' else 'pending' end,'unpaid')
+  on conflict(user_id,session_id) do update set status='pending',payment_status='unpaid';
+  return 'pending';
+end;
+$$;
+
+create or replace function public.set_my_absence(p_session_id bigint,p_not_coming boolean)
+returns void language plpgsql security definer set search_path=public as $$
+begin
+  if not exists(select 1 from public.profiles where id=auth.uid() and player_type='permanent' and player_type_status='approved') then
+    raise exception 'Only approved permanent players can mark absences';
+  end if;
+  insert into public.absences(user_id,session_id,not_coming)
+  values(auth.uid(),p_session_id,p_not_coming)
+  on conflict(user_id,session_id) do update set not_coming=excluded.not_coming;
+  if p_not_coming then
+    update public.registrations set status='cancelled' where user_id=auth.uid() and session_id=p_session_id and status in ('confirmed','pending');
+  else
+    update public.registrations set status='confirmed',payment_status='paid'
+    where user_id=auth.uid() and session_id=p_session_id;
+  end if;
+end;
+$$;
+
+grant execute on function public.register_dropin(bigint) to authenticated;
+grant execute on function public.set_my_absence(bigint,boolean) to authenticated;
+
+-- Keep ordinary players from inserting registrations for other users or editing another user's status.
+drop policy if exists "registrations_own_insert" on public.registrations;
+create policy "registrations_own_insert" on public.registrations for insert
+with check (user_id=auth.uid() and exists(select 1 from public.profiles p where p.id=auth.uid() and p.player_type='dropin' and p.player_type_status='approved'));
+
+drop policy if exists "registrations_own_update" on public.registrations;
+create policy "registrations_own_update" on public.registrations for update
+using (user_id=auth.uid() or public.is_admin())
+with check (public.is_admin() or (user_id=auth.uid() and status in ('cancelled','pending','waitlist')));
