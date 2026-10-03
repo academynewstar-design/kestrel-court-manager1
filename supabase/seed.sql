@@ -4,7 +4,17 @@ insert into public.locations(name,address,city) values
 ('Ange Gabriel Elementary School','Mississauga, Ontario','Mississauga')
 on conflict(name) do nothing;
 insert into public.sessions(sport_id,location_id,session_date,start_time,end_time,capacity,price,payment_email,payment_first,status)
-select s.id,l.id,v.d::date,v.st,v.et,v.cap,v.price,v.email,v.first,'open'
+select
+  s.id,
+  l.id,
+  v.d::date,
+  v.st::time,
+  v.et::time,
+  v.cap,
+  v.price,
+  v.email,
+  v.first,
+  'open'
 from (values
 ('volleyball','École élémentaire La Pommeraie','2026-10-06','19:00','21:00',18,6.00,'kheynand@gmail.com',false),
 ('volleyball','École élémentaire La Pommeraie','2026-10-08','19:00','21:00',18,6.00,'kheynand@gmail.com',false),
