@@ -290,7 +290,6 @@ create table if not exists public.legacy_court_allocations (
   player_name text not null,
   source_sheet text,
   source_row int,
-  unique(recurring_schedule_id,court,player_name)
 );
 
 alter table public.recurring_schedules enable row level security;
