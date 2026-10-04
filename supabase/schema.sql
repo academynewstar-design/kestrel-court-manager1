@@ -388,3 +388,43 @@ create policy "suggestion messages conversation update" on public.suggestion_mes
 );
 grant select,insert,update on public.suggestion_messages to authenticated;
 grant usage,select on sequence public.suggestion_messages_id_seq to authenticated;
+
+
+-- Permanent player self-service: allow additional sessions and keep court allocations in sync.
+-- Live database updated 2026-10-04.
+create or replace function public.save_my_permanent_choices(p_choices jsonb)
+returns void language plpgsql security definer set search_path=public
+as $function$
+declare
+ v_uid uuid:=auth.uid(); v_item jsonb; v_schedule record; v_date date; v_session_id bigint;
+ v_dow integer; v_i integer; v_court text; v_name text;
+begin
+ if v_uid is null then raise exception 'You must be signed in'; end if;
+ select full_name into v_name from profiles where id=v_uid and player_type='permanent' and player_type_status='approved';
+ if not found then raise exception 'You must be an approved permanent player'; end if;
+ if p_choices is null or jsonb_typeof(p_choices)<>'array' or jsonb_array_length(p_choices)<1 then raise exception 'Please choose at least 1 regular activity'; end if;
+ for v_item in select value from jsonb_array_elements(p_choices) loop
+  select * into v_schedule from recurring_schedules where id=(v_item->>'recurring_schedule_id')::bigint and active=true;
+  if not found then raise exception 'Invalid recurring schedule'; end if;
+  v_court:=coalesce(nullif(v_item->>'court',''),case when (select name from sports where id=v_schedule.sport_id)='badminton' then 'Court 1' else 'General' end);
+  insert into recurring_permanent_requests(user_id,recurring_schedule_id,court,status,reviewed_at)
+  values(v_uid,v_schedule.id,v_court,'approved',now())
+  on conflict(user_id,recurring_schedule_id) do update set court=excluded.court,status='approved',reviewed_at=now();
+  delete from legacy_court_allocations where recurring_schedule_id=v_schedule.id and player_name=v_name and source_sheet='Portal registration';
+  insert into legacy_court_allocations(recurring_schedule_id,court,player_name,source_sheet) values(v_schedule.id,v_court,v_name,'Portal registration');
+  v_dow:=case lower(v_schedule.weekday) when 'sunday' then 0 when 'monday' then 1 when 'tuesday' then 2 when 'wednesday' then 3 when 'thursday' then 4 when 'friday' then 5 when 'saturday' then 6 else null end;
+  if v_dow is null then raise exception 'Invalid weekday: %',v_schedule.weekday; end if;
+  v_date:=current_date+((v_dow-extract(dow from current_date)::integer+7)%7);
+  for v_i in 0..11 loop
+   insert into sessions(sport_id,location_id,session_date,start_time,end_time,capacity,price,status,court,recurring_schedule_id)
+   values(v_schedule.sport_id,v_schedule.location_id,v_date+(v_i*7),v_schedule.start_time,v_schedule.end_time,18,0,'open',v_court,v_schedule.id)
+   on conflict(recurring_schedule_id,session_date,court) where recurring_schedule_id is not null
+   do update set start_time=excluded.start_time,end_time=excluded.end_time returning id into v_session_id;
+   insert into permanent_assignments(user_id,session_id) values(v_uid,v_session_id) on conflict do nothing;
+   insert into registrations(user_id,session_id,status,payment_status) values(v_uid,v_session_id,'confirmed','paid')
+   on conflict(user_id,session_id) do update set status='confirmed',payment_status='paid';
+  end loop;
+ end loop;
+end $function$;
+revoke execute on function public.save_my_permanent_choices(jsonb) from public, anon;
+grant execute on function public.save_my_permanent_choices(jsonb) to authenticated;
