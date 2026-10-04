@@ -31,3 +31,6 @@ body{background:linear-gradient(180deg,#eef4fb 0,#f8fafc 320px)}
 @media(max-width:600px){.kestrellogo{width:50px;height:43px}}
 
 .suggestionmeta{display:flex;justify-content:space-between;align-items:center;gap:12px}.suggestiontext{white-space:pre-wrap;line-height:1.55;margin-bottom:0}@media(max-width:600px){.suggestionmeta{align-items:flex-start;flex-direction:column;gap:3px}}
+
+.memberline{font-size:11px;color:#fff;opacity:.78;margin-top:3px}
+@media(max-width:600px){.memberline{font-size:9px}.brandwrap{gap:8px}header>.outline{padding:9px 11px;font-size:12px}}
