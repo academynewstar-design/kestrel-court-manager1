@@ -263,3 +263,9 @@ end;
 $$;
 
 grant execute on function public.approve_permanent_request(bigint) to authenticated;
+
+
+-- Allow administrators to update registration approvals/payment status.
+drop policy if exists "registrations_admin_update" on public.registrations;
+create policy "registrations_admin_update" on public.registrations
+for update using(public.is_admin()) with check(public.is_admin());
