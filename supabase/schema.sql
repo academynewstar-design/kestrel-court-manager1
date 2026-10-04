@@ -331,3 +331,10 @@ create policy "recurring perm own insert" on public.recurring_permanent_requests
 create policy "recurring perm own update" on public.recurring_permanent_requests for update to authenticated using ((select auth.uid())=user_id or (select public.is_admin())) with check ((select auth.uid())=user_id or (select public.is_admin()));
 grant select,insert,update on public.recurring_permanent_requests to authenticated;
 grant usage,select on sequence public.recurring_permanent_requests_id_seq to authenticated;
+
+
+-- Connect recurring schedules to generated dated sessions
+alter table public.recurring_schedules add column if not exists start_time time;
+alter table public.recurring_schedules add column if not exists end_time time;
+alter table public.sessions add column if not exists recurring_schedule_id bigint references public.recurring_schedules(id);
+create unique index if not exists sessions_recurring_date_court_uq on public.sessions(recurring_schedule_id,session_date,court) where recurring_schedule_id is not null;
