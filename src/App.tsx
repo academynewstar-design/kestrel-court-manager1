@@ -75,11 +75,16 @@ function PlayerSetup({profile,sessions,onLogout,onComplete}:{profile:any,session
    const{error:pe}=await supabase.from('profiles').update({requested_player_type:type,player_type_status:'approved'}).eq('id',profile.id);
    if(pe){setMsg(pe.message);setBusy(false);return}
    const weekday=new Date(String(chosen.session_date)+'T12:00:00').toLocaleDateString('en-US',{weekday:'long'});
-   const{data:rs}=await supabase.from('recurring_schedules').select('id').eq('active',true).eq('weekday',weekday).limit(50);
-   if(rs?.length===1){
-    const{error}=await supabase.rpc('save_my_permanent_choices',{p_choices:[{recurring_schedule_id:rs[0].id,court:chosen.sports?.name==='badminton'?(chosen.court||'Court 1'):null,player_level:level}]});
-    if(error){setMsg(error.message);setBusy(false);return}
-   }
+   const{data:sp}=await supabase.from('sports').select('id').eq('name',sport).single();
+   const{data:loc}=await supabase.from('locations').select('id').eq('name',location).single();
+   if(!sp||!loc){setMsg('Unable to find that sport or location.');setBusy(false);return}
+   const startTime=String(chosen.start_time||'').slice(0,5);
+   const{data:rs,error:rsError}=await supabase.from('recurring_schedules').select('id,start_time').eq('active',true).eq('weekday',weekday).eq('sport_id',sp.id).eq('location_id',loc.id);
+   if(rsError){setMsg(rsError.message);setBusy(false);return}
+   const recurring=(rs||[]).find((r:any)=>String(r.start_time||'').slice(0,5)===startTime);
+   if(!recurring){setMsg('Could not match that Season session to its regular weekly schedule. Please contact the admin.');setBusy(false);return}
+   const{error}=await supabase.rpc('save_my_permanent_choices',{p_choices:[{recurring_schedule_id:recurring.id,court:chosen.sports?.name==='badminton'?(chosen.court||'Court 1'):null,player_level:level}]});
+   if(error){setMsg(error.message);setBusy(false);return}
   }
   setMsg(type==='dropin'?'Drop-in player registration submitted for admin approval. You will choose a dated session only after approval.':'Registration submitted for admin approval.');setBusy(false);setTimeout(()=>onComplete(),700)
  }
