@@ -5,7 +5,10 @@ type PlayerType='permanent'|'dropin';
 type Sport='badminton'|'volleyball'|'soccer'|'pickleball';
 
 const today=()=>new Date().toISOString().slice(0,10);
-const money=(n:any)=>'
+const money=(n:any)=>'$'+Number(n||0).toFixed(2);
+const levelLabel=(v:any)=>v==='low_intermediate'?'Low Intermediate':v==='intermediate'?'Intermediate':v==='advanced'?'Advanced':'';
+
+export default function App(){
  const[screen,setScreen]=useState<'home'|'register'|'login'|'pending'|'reset'>('home');
  const[profile,setProfile]=useState<any>(null); const[message,setMessage]=useState('');
  const[email,setEmail]=useState(''); const[password,setPassword]=useState(''); const[name,setName]=useState('');
