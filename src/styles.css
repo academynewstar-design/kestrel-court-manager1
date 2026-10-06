@@ -34,3 +34,14 @@ body{background:linear-gradient(180deg,#eef4fb 0,#f8fafc 320px)}
 
 .memberline{font-size:11px;color:#fff;opacity:.78;margin-top:3px}
 @media(max-width:600px){.memberline{font-size:9px}.brandwrap{gap:8px}header>.outline{padding:9px 11px;font-size:12px}}
+
+
+/* Branded Google authentication transition */
+.auth-loading{min-height:100vh;display:grid;place-items:center;padding:24px;background:linear-gradient(145deg,#071b3d,#0b315f 60%,#b91c1c)}
+.auth-loading-card{width:min(92vw,430px);text-align:center;background:white;border-radius:24px;padding:38px 28px;box-shadow:0 18px 55px #0005}
+.auth-loading-logo{width:100px;height:82px;object-fit:contain;filter:drop-shadow(0 5px 8px #0003)}
+.auth-loading-card h2{margin:12px 0 18px;font-size:26px;color:#071b3d}
+.auth-loading-card p{margin:18px 0 6px;font-weight:700;color:#334155}
+.auth-loading-card small{color:#64748b;line-height:1.5}
+.auth-spinner{width:44px;height:44px;margin:0 auto;border:4px solid #dbe4ef;border-top-color:#0b315f;border-radius:50%;animation:kestrel-spin .8s linear infinite}
+@keyframes kestrel-spin{to{transform:rotate(360deg)}}
