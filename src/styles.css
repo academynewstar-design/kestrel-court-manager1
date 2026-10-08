@@ -55,3 +55,8 @@ body{background:linear-gradient(180deg,#eef4fb 0,#f8fafc 320px)}
 @keyframes kestrel-fly{0%,100%{transform:translate(0,0) rotate(-3deg)}50%{transform:translate(-28px,12px) rotate(4deg)}}
 @media(max-width:600px){.player-welcome{padding-top:28px}.flying-kestrel{width:48px;opacity:.85}.player-welcome h1{padding-right:42px;font-size:25px}}
 @media(prefers-reduced-motion:reduce){.flying-kestrel{animation:none}}
+
+/* Idle Kestrel patrol: follows the edges of the viewport without blocking controls */
+.approval-kestrel{position:fixed;z-index:20;top:92px;left:18px;right:auto;width:58px;animation:kestrel-screen-patrol 18s linear infinite;pointer-events:none}
+@keyframes kestrel-screen-patrol{0%{top:92px;left:18px;transform:rotate(0deg)}25%{top:92px;left:calc(100vw - 82px);transform:rotate(5deg)}50%{top:calc(100vh - 100px);left:calc(100vw - 82px);transform:rotate(90deg)}75%{top:calc(100vh - 100px);left:18px;transform:rotate(185deg)}100%{top:92px;left:18px;transform:rotate(360deg)}}
+@media(prefers-reduced-motion:reduce){.approval-kestrel{animation:none;position:absolute;top:10px;left:auto;right:14px}}
