@@ -45,3 +45,13 @@ body{background:linear-gradient(180deg,#eef4fb 0,#f8fafc 320px)}
 .auth-loading-card small{color:#64748b;line-height:1.5}
 .auth-spinner{width:44px;height:44px;margin:0 auto;border:4px solid #dbe4ef;border-top-color:#0b315f;border-radius:50%;animation:kestrel-spin .8s linear infinite}
 @keyframes kestrel-spin{to{transform:rotate(360deg)}}
+
+/* Friendly first-time player registration */
+.player-welcome{position:relative;overflow:hidden;padding-top:34px}
+.player-welcome h1{color:#071b3d;margin-bottom:6px}
+.player-welcome>h3{color:#b45309;margin-top:0}
+.flying-kestrel{position:absolute;top:10px;right:14px;width:68px;pointer-events:none;animation:kestrel-fly 5s ease-in-out infinite}
+.flying-kestrel img{width:100%;height:auto;filter:drop-shadow(0 4px 5px #0003)}
+@keyframes kestrel-fly{0%,100%{transform:translate(0,0) rotate(-3deg)}50%{transform:translate(-28px,12px) rotate(4deg)}}
+@media(max-width:600px){.player-welcome{padding-top:28px}.flying-kestrel{width:48px;opacity:.85}.player-welcome h1{padding-right:42px;font-size:25px}}
+@media(prefers-reduced-motion:reduce){.flying-kestrel{animation:none}}
