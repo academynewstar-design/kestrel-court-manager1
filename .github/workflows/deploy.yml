@@ -34,4 +34,4 @@ jobs:
       id-token: write
     steps:
       - uses: actions/deploy-pages@v4
-# Deployment requested for Season registration flow update.
+# Manual deployment retrigger: Season dashboard assigned sessions only.
