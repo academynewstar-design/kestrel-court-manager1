@@ -36,3 +36,4 @@ jobs:
       - uses: actions/deploy-pages@v4
 # Manual deployment retrigger: Season dashboard assigned sessions only.
 # Manual redeploy requested for grouped badminton court roster (cd20dcc).
+# Manual redeployment requested for court dropdown and WhatsApp roster (9c11608).
