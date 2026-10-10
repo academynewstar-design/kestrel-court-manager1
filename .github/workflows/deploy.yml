@@ -34,4 +34,4 @@ jobs:
       id-token: write
     steps:
       - uses: actions/deploy-pages@v4
-# Deployment retry requested for roster controls.
+# Deployment refresh for separate Season Vacation / Bulk Absence tab.
