@@ -34,4 +34,4 @@ jobs:
       id-token: write
     steps:
       - uses: actions/deploy-pages@v4
-# Deployment refresh for separate Season Vacation / Bulk Absence tab.
+# Deployment requested for Season registration flow update.
