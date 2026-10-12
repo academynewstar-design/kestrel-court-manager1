@@ -1,1 +1,1 @@
-{"name":"Kestrel Court Manager","short_name":"Kestrel Courts","start_url":"/kestrel-court-manager1/","display":"standalone","background_color":"#f4f7fb","theme_color":"#111827"}
+{"name":"Kestrel Sports Club","short_name":"Kestrel Sports","id":"/","start_url":"/","scope":"/","display":"standalone","background_color":"#f4f7fb","theme_color":"#111827","icons":[{"src":"/kestrel-bird.svg","sizes":"any","type":"image/svg+xml","purpose":"any"}]}
