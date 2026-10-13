@@ -1,0 +1,14 @@
+[
+  {
+    "relation": [
+      "delegate_permission/common.handle_all_urls"
+    ],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "ca.kestrelsports.app",
+      "sha256_cert_fingerprints": [
+        "77:05:46:F3:B6:05:FC:23:8F:05:36:DA:56:BF:E7:A5:D5:5F:CE:D9:E2:D7:BC:07:73:28:4B:7D:4F:C2:3F:F1"
+      ]
+    }
+  }
+]
