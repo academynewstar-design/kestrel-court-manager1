@@ -1,6 +1,7 @@
 import {useEffect,useState} from 'react';
 import {supabase} from './lib/supabase';
 import SeasonCourtReport from './SeasonCourtReport';
+import UnpaidDropinReport from './UnpaidDropinReport';
 
 type PlayerType='permanent'|'dropin';
 type Sport='badminton'|'volleyball'|'soccer'|'pickleball';
@@ -148,14 +149,14 @@ function AdminDashboard({profile,onLogout}:{profile:any,onLogout:()=>void}){
  const[tab,setTab]=useState<'today'|'players'|'rosters'|'calendar'|'messages'|'reports'>('today');
  const[rosterMode,setRosterMode]=useState<'activity'|'season'|'legacy'|'groups'>('activity');
  const[messageMode,setMessageMode]=useState<'inbox'|'announcements'|'whatsapp'>('inbox');
- const[reportMode,setReportMode]=useState<'reports'|'notGoing'|'seasonCourts'|'legacyDropin'>('reports');
+ const[reportMode,setReportMode]=useState<'reports'|'notGoing'|'seasonCourts'|'legacyDropin'|'unpaidDropins'>('reports');
  return <><header><div className="brandwrap"><img className="kestrellogo" src="/kestrel-bird.svg" alt="Kestrel Sports Club bird logo"/><div><div className="brand">KESTREL SPORTS CLUB · Admin</div><div className="sub">Play • Stay Healthy • Build Community</div><div className="memberline">{profile.full_name}</div></div></div><button className="outline" onClick={onLogout}>Sign out</button></header><main><div className="tabs admin-tabs">{[['today','🏠 Today'],['players','👥 Players'],['rosters','🏐 Rosters'],['calendar','📅 Calendar'],['messages','💬 Messages'],['reports','📊 Reports']].map(([k,v])=><button className={tab===k?'active':''} onClick={()=>setTab(k as any)} key={k}>{v}</button>)}</div>
  {tab==='today'&&<AdminToday onOpenRoster={()=>{setRosterMode('activity');setTab('rosters')}}/>}
  {tab==='players'&&<><AdminNameReviews/><AdminPlayers/></>}
  {tab==='rosters'&&<><div className="tabs"><button className={rosterMode==='activity'?'active':''} onClick={()=>setRosterMode('activity')}>Activity roster</button><button className={rosterMode==='season'?'active':''} onClick={()=>setRosterMode('season')}>Season court assignments</button><button className={rosterMode==='legacy'?'active':''} onClick={()=>setRosterMode('legacy')}>Imported court allocations</button><button className={rosterMode==='groups'?'active':''} onClick={()=>setRosterMode('groups')}>Group court bookings</button></div>{rosterMode==='activity'&&<AdminActivityRoster/>}{rosterMode==='season'&&<AdminAssignments/>}{rosterMode==='legacy'&&<AdminCourtAllocations/>}{rosterMode==='groups'&&<AdminGroupCourtBookings/>}</>}
  {tab==='calendar'&&<AdminSchedule/>}
  {tab==='messages'&&<><div className="tabs"><button className={messageMode==='inbox'?'active':''} onClick={()=>setMessageMode('inbox')}>Player messages</button><button className={messageMode==='announcements'?'active':''} onClick={()=>setMessageMode('announcements')}>Announcements</button><button className={messageMode==='whatsapp'?'active':''} onClick={()=>setMessageMode('whatsapp')}>🚨 Urgent WhatsApp</button></div>{messageMode==='inbox'?<AdminSuggestions/>:messageMode==='whatsapp'?<AdminUrgentWhatsApp/>:<AdminNotices/>}</>}
- {tab==='reports'&&<><div className="tabs"><button className={reportMode==='reports'?'active':''} onClick={()=>setReportMode('reports')}>Players Joining</button><button className={reportMode==='notGoing'?'active':''} onClick={()=>setReportMode('notGoing')}>Not Going</button><button className={reportMode==='seasonCourts'?'active':''} onClick={()=>setReportMode('seasonCourts')}>Season Players by Court</button><button className={reportMode==='legacyDropin'?'active':''} onClick={()=>setReportMode('legacyDropin')}>Registrations & payments</button></div>{reportMode==='reports'?<AdminNewPlayerReport/>:reportMode==='notGoing'?<AdminNotGoingReport/>:reportMode==='seasonCourts'?<SeasonCourtReport/>:<AdminRegistrations/>}</>}
+ {tab==='reports'&&<><div className="tabs"><button className={reportMode==='reports'?'active':''} onClick={()=>setReportMode('reports')}>Players Joining</button><button className={reportMode==='notGoing'?'active':''} onClick={()=>setReportMode('notGoing')}>Not Going</button><button className={reportMode==='seasonCourts'?'active':''} onClick={()=>setReportMode('seasonCourts')}>Season Players by Court</button><button className={reportMode==='legacyDropin'?'active':''} onClick={()=>setReportMode('legacyDropin')}>Registrations & payments</button><button className={reportMode==='unpaidDropins'?'active':''} onClick={()=>setReportMode('unpaidDropins')}>Unpaid Drop-ins</button></div>{reportMode==='unpaidDropins'?<UnpaidDropinReport/>:reportMode==='reports'?<AdminNewPlayerReport/>:reportMode==='notGoing'?<AdminNotGoingReport/>:reportMode==='seasonCourts'?<SeasonCourtReport/>:<AdminRegistrations/>}</>}
  </main></>
 }
 function summarizeSeasonActivity(events:any[]){
