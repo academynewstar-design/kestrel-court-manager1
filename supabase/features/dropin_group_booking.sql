@@ -210,13 +210,14 @@ begin
 end $$;
 create trigger zz_dropin_group_capacity before insert or update of status,session_id on public.registrations for each row execute function kestrel_groups.guard_capacity();
 
-create function kestrel_groups.promote(p_session_id bigint) returns void language plpgsql security definer set search_path='' as $$
-declare cap record;rid bigint;ids bigint[];
+create or replace function kestrel_groups.promote(p_session_id bigint) returns void language plpgsql security definer set search_path='' as $$
+declare cap record;rid bigint;ids bigint[];target_id bigint;
 begin
- if not exists(select 1 from public.sessions where id=p_session_id and dropin_enabled and status<>'closed' and availability_status='available' and ((session_date+start_time) at time zone 'America/Toronto')>now()+interval '1 hour') then return;end if;
- perform kestrel_groups.lock_activity(p_session_id);ids:=kestrel_groups.activity_ids(p_session_id);
+ select id into target_id from public.sessions where id=any(kestrel_groups.activity_ids(p_session_id)) and dropin_enabled and status<>'closed' and availability_status='available' and ((session_date+start_time) at time zone 'America/Toronto')>now()+interval '1 hour' order by id limit 1;
+ if target_id is null then return;end if;
+ perform kestrel_groups.lock_activity(target_id);ids:=kestrel_groups.activity_ids(target_id);
  loop
-  select * into cap from public.get_dropin_session_availability(array[p_session_id]);
+  select * into cap from public.get_dropin_session_availability(array[target_id]);
   exit when cap.occupied>=cap.total_capacity;
   select r.id into rid from public.registrations r join public.profiles p on p.id=r.user_id where r.session_id=any(ids) and r.status='waitlist' and p.player_type_status='approved'
    and not exists(select 1 from public.registrations other where other.user_id=r.user_id and other.session_id=any(ids) and other.status='confirmed')
@@ -449,3 +450,5 @@ end $$;
 CREATE OR REPLACE FUNCTION public.get_my_confirmed_session_roster(p_session_id bigint) returns table(player_name text,is_me boolean) language sql stable security definer set search_path='' as $$
 select r.player_name,r.is_me from kestrel_groups.roster(p_session_id) r
 $$;
+
+

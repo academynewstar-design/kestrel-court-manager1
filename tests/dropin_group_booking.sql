@@ -3,6 +3,7 @@
 select set_config('group_test.owner',(select id::text from public.profiles where managed_by is null and not is_admin and player_type_status='approved' order by id limit 1),true);
 select set_config('group_test.other',(select id::text from public.profiles where managed_by is null and not is_admin and player_type_status='approved' and id::text<>current_setting('group_test.owner') order by id limit 1),true);
 select set_config('group_test.third',(select id::text from public.profiles where managed_by is null and not is_admin and player_type_status='approved' and id::text not in(current_setting('group_test.owner'),current_setting('group_test.other')) order by id limit 1),true);
+select set_config('group_test.fourth',(select id::text from public.profiles where managed_by is null and not is_admin and player_type_status='approved' and id::text not in(current_setting('group_test.owner'),current_setting('group_test.other'),current_setting('group_test.third')) order by id limit 1),true);
 select set_config('group_test.admin',(select id::text from public.profiles where is_admin order by id limit 1),true);
 insert into public.sessions(sport_id,location_id,session_date,start_time,end_time,capacity,price,payment_email,court,dropin_enabled,dropin_spots,status,availability_status,registration_open_at)
 select sp.id,l.id,'2099-06-02','18:00','20:00',12,6,'test@example.invalid','Group integration test',true,12,'open','available',now()-interval '1 day'
@@ -39,6 +40,9 @@ do $$declare a record;begin
 end $$;
 select public.mark_my_dropin_paid(current_setting('group_test.session')::bigint);
 reset role;
+
+
+
 do $$begin
  assert (select count(*) from public.registrations r join kestrel_groups.members m on m.player_id=r.user_id where m.request_id=current_setting('group_test.request')::bigint and r.session_id=current_setting('group_test.session')::bigint and r.payment_status='paid')=10,'Group payment did not cover every guest';
  assert (select count(*) from public.registrations where session_id=current_setting('group_test.session')::bigint and status='confirmed')=12,'Guest rows missing';
@@ -98,7 +102,6 @@ do $$begin
  begin perform public.review_dropin_group(current_setting('group_test.expired')::bigint,true,null);raise exception 'TEST FAILED: expired request approved';exception when others then if SQLERRM<>'This request has expired' then raise;end if;end;
 end $$;
 reset role;
-
 -- Volleyball aliases share one capacity pool, and every approved guest receives a team slot.
 insert into public.sessions(sport_id,location_id,session_date,start_time,end_time,capacity,price,court,dropin_enabled,dropin_spots,status,availability_status)
 select sp.id,l.id,'2099-06-09','18:00','20:00',14,6,c.name,true,14,'open','available'
@@ -121,6 +124,18 @@ do $$begin
  assert (select count(distinct user_id) from public.session_teams where session_id=current_setting('group_test.volley_a')::bigint)=12,'Guest participants omitted from team generation';
  assert (select count(*) from public.session_teams t join kestrel_groups.members m on m.player_id=t.user_id where m.request_id=current_setting('group_test.volley_request')::bigint and t.session_id=current_setting('group_test.volley_a')::bigint)=10,'Group did not receive ten team slots';
 end $$;
+
+-- A vacancy on a Season-only volleyball alias still promotes the shared Drop-in waitlist.
+update public.sessions set capacity=12 where id in(current_setting('group_test.volley_a')::bigint,current_setting('group_test.volley_b')::bigint);
+select set_config('request.jwt.claim.sub',current_setting('group_test.fourth'),true);
+set local role authenticated;
+do $$begin assert public.register_dropin(current_setting('group_test.volley_b')::bigint,'intermediate')='waitlist','Expected a full shared volleyball activity';end $$;
+reset role;
+update public.sessions set capacity=13 where id in(current_setting('group_test.volley_a')::bigint,current_setting('group_test.volley_b')::bigint);
+update public.sessions set dropin_enabled=false where id=current_setting('group_test.volley_b')::bigint;
+select kestrel_groups.promote(current_setting('group_test.volley_b')::bigint);
+do $$begin assert exists(select 1 from public.registrations where user_id=current_setting('group_test.fourth')::uuid and session_id=current_setting('group_test.volley_b')::bigint and status='confirmed'),'Season alias vacancy did not promote the shared waitlist';end $$;
+
 -- Endpoint permissions and cross-account mutation are denied.
 select set_config('request.jwt.claim.sub',current_setting('group_test.third'),true);
 set local role authenticated;
