@@ -100,3 +100,5 @@ body{background:linear-gradient(180deg,#eef4fb 0,#f8fafc 320px)}
 .hero .actions button{width:min(100%,360px);min-height:48px;white-space:normal;text-align:center}
 .hero+.grid .feature{text-align:center;align-items:center;justify-content:center}
 @media(max-width:600px){.hero h1{font-size:clamp(29px,8vw,42px);line-height:1.13}.hero p{font-size:16px;line-height:1.5}.hero .actions button{width:100%;max-width:360px}}
+
+.family-form{padding:18px;border:1px solid #cbd5e1;border-radius:12px;margin:16px 0}.family-check{display:flex;align-items:flex-start;gap:10px;margin:16px 0}.family-check input[type="checkbox"]{width:20px;min-width:20px;height:20px;margin-top:2px}.family-manager .rowactions label{min-width:130px}.family-manager .session{flex-wrap:wrap;gap:12px}.family-manager .session>div{min-width:0;overflow-wrap:anywhere}
