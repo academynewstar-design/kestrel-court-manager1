@@ -90,7 +90,7 @@ function ScreenBadmintonRally({paused,onToggle}:{paused:boolean,onToggle:()=>voi
 }
 function SportRallyStrip({sports}:{sports:string[]}){
  const available=rallySports.filter(s=>sports.includes(s));const choices=available.length?available:rallySports;
- const[index,setIndex]=useState(0);const[paused,setPaused]=useState(()=>localStorage.getItem('kestrel-sport-animation-paused')==='1'||window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+ const[index,setIndex]=useState(0);const[paused,setPaused]=useState(()=>localStorage.getItem('kestrel-sport-animation-paused')==='1'||!!window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches);
  const sport=choices[index%choices.length];const names={badminton:'Badminton',volleyball:'Volleyball',soccer:'Soccer',basketball:'Basketball',pickleball:'Pickleball'};
  useEffect(()=>{if(paused||choices.length<2)return;const timer=setInterval(()=>setIndex(n=>n+1),12000);return()=>clearInterval(timer)},[paused,choices.join('|')]);
  function toggle(){setPaused(v=>{localStorage.setItem('kestrel-sport-animation-paused',String(!v?1:0));return !v})}
