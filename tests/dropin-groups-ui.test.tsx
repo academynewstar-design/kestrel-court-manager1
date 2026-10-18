@@ -44,6 +44,23 @@ describe('Group Drop-in booking',()=>{
   await user.click(approve);
   await waitFor(()=>expect(rpc).toHaveBeenCalledWith('review_dropin_group',{p_request_id:7,p_approve:true,p_note:null}));
  });
+ it('clears a previous fetch error when refreshing succeeds',async()=>{
+  rpc.mockResolvedValueOnce({data:null,error:{message:'TypeError: Failed to fetch'}});
+  render(<AdminGroupApprovals/>);
+  expect((await screen.findByRole('alert')).textContent).toContain('Failed to fetch');
+  rpc.mockResolvedValueOnce({data:[group],error:null});
+  fireEvent.click(screen.getByRole('button',{name:'Refresh'}));
+  await screen.findByRole('button',{name:'Approve 4 people'});
+  expect(screen.queryByRole('alert')).toBeNull();
+ });
+ it('hides the recovered panel when there are no pending requests',async()=>{
+  rpc.mockResolvedValueOnce({data:null,error:{message:'TypeError: Failed to fetch'}});
+  render(<AdminGroupApprovals/>);
+  await screen.findByRole('alert');
+  fireEvent.click(screen.getByRole('button',{name:'Refresh'}));
+  await waitFor(()=>expect(screen.queryByRole('alert')).toBeNull());
+  expect(screen.queryByText(/Group Drop-in approvals/)).toBeNull();
+ });
  it('shows Tim + 9 as one row while preserving ten occupied spots',()=>{
   const members=['tim',...Array.from({length:9},(_,i)=>'guest-'+i)];
   const rows=members.map((id,i)=>({id:i+1,user_id:id,session_id:42,status:'confirmed',payment_status:'paid',profiles:{full_name:id}}));
