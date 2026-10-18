@@ -51,7 +51,7 @@ export function MyGroupRequests({requests,onChanged}:{requests:DropinGroup[];onC
 
 export function AdminGroupApprovals(){
  const[requests,setRequests]=useState<DropinGroup[]>([]),[notes,setNotes]=useState<Record<string,string>>({}),[checked,setChecked]=useState<Record<string,boolean>>({}),[busy,setBusy]=useState<number|null>(null),[error,setError]=useState(''),[message,setMessage]=useState('');
- async function load(){const{data,error}=await supabase.rpc('list_dropin_groups');if(error)setError(error.message);else setRequests((data||[]).filter((g:DropinGroup)=>g.status==='pending'))}
+ async function load(){const{data,error}=await supabase.rpc('list_dropin_groups');if(error)setError(error.message);else{setError('');setRequests((data||[]).filter((g:DropinGroup)=>g.status==='pending'))}}
  useEffect(()=>{load();const t=setInterval(load,30000);window.addEventListener('kestrel-group-bookings-changed',load);return()=>{clearInterval(t);window.removeEventListener('kestrel-group-bookings-changed',load)}},[]);
  async function review(g:DropinGroup,approve:boolean){setBusy(g.id);setError('');setMessage('');const{error}=await supabase.rpc('review_dropin_group',{p_request_id:g.id,p_approve:approve,p_note:notes[String(g.id)]||null});if(error)setError(error.message);else{setMessage(approve?g.owner_name+' + '+(g.total_people-1)+' approved. All '+g.total_people+' places are now on the roster.':'Group request rejected; held spots released.');await load();changed()}setBusy(null)}
  if(!requests.length&&!error&&!message)return null;
