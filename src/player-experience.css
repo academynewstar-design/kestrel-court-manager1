@@ -1,0 +1,41 @@
+/* Shared visual language for registration and the player dashboard. */
+.eyebrow{display:block;color:#0f766e;font-size:11px;letter-spacing:.12em;font-weight:800;margin-bottom:10px}
+.registration-entry,.player-welcome{border-top:5px solid #14b8a6;background:linear-gradient(145deg,#f0fdfa,#fff 55%,#fffbeb);box-shadow:0 14px 40px #0b315f12}
+.registration-entry h2{color:#0b315f;font-size:30px;line-height:1.15}
+.registration-entry p,.player-welcome p{line-height:1.5}
+.registration-sports{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:16px 0;color:#0b315f;font-weight:700;font-size:13px}
+.registration-entry .google-btn{width:100%;min-height:48px;border:2px solid #0f766e!important;border-radius:14px}
+.player-welcome>div>img{max-height:180px}
+.player-welcome .tabs{overflow:visible}
+.player-welcome .play-type{border:2px solid transparent;box-shadow:0 5px 14px #0b315f0a;transition:transform .15s,border-color .15s}
+.player-welcome .dropin-type{background:#ccfbf1;color:#115e59}
+.player-welcome .season-type{background:#fef3c7;color:#78350f}
+.player-welcome .dropin-type.active{background:#0f766e;color:#fff;border-color:#134e4a}
+.player-welcome .season-type.active{background:#92400e;color:#fff;border-color:#78350f}
+.play-type small{font-weight:500;line-height:1.4}
+.player-welcome .notice{background:#fff;border-color:#b4dcd7}
+.player-dashboard{background:radial-gradient(ellipse at top left,#ccfbf14d,transparent 65%);padding-top:16px}
+.player-navigation{display:flex;flex-wrap:wrap;gap:8px;padding:10px;background:#e5eef7;border:1px solid #d6e4f0;border-radius:18px;overflow:visible}
+.player-navigation button{background:#fff;color:#334155;font-size:13px;min-height:44px;padding:10px 12px;white-space:normal;flex:1 1 145px}
+.player-navigation button.active{background:linear-gradient(135deg,#0f766e,#0b315f);color:#fff;box-shadow:0 4px 10px #0f766e28}
+.more-player-options{flex:1 1 100%;grid-column:1/-1;min-width:0}
+.more-player-options summary{cursor:pointer;text-align:center;padding:10px;color:#0b315f;font-size:13px;font-weight:700;min-height:40px}
+.extra-player-options{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;padding-top:6px}
+.player-dashboard .contact-secondary{text-align:right;margin:4px 0}
+.player-dashboard .contact-secondary button{background:transparent!important;border:0;color:#52657c!important;font-size:12px;padding:7px 4px;text-decoration:underline;text-underline-offset:3px;min-height:36px}
+.player-dashboard .card{box-shadow:0 5px 20px #0b315f08}
+.player-dashboard .upcoming-games{background:linear-gradient(110deg,#eff6ff,#f0fdfa);border-color:#badbdc;border-left:4px solid #14b8a6}
+.player-dashboard .game-picker{border-top:4px solid #14b8a6;padding:20px}
+.game-picker .eyebrow{margin-bottom:6px}
+.sport-choices{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px}
+.sport-choice{--sport:#0f766e;--tint:#f0fdfa;--ink:#115e59;background:var(--tint);color:var(--ink);border:2px solid color-mix(in srgb,var(--sport) 30%,white);min-height:76px;padding:12px 8px;text-transform:capitalize;font-size:14px;transition:background .15s,box-shadow .15s}
+.sport-volleyball{--sport:#2563eb;--tint:#eff6ff;--ink:#1e40af}
+.sport-soccer{--sport:#15803d;--tint:#f0fdf4;--ink:#166534}
+.sport-basketball{--sport:#c2410c;--tint:#fff7ed;--ink:#9a3412}
+.sport-pickleball{--sport:#7e22ce;--tint:#faf5ff;--ink:#6b21a8}
+.sport-choice.selected{background:var(--sport);color:#fff;border-color:var(--sport);box-shadow:0 0 0 3px var(--tint),0 5px 12px #0b315f20}
+.player-dashboard button:focus-visible,.player-welcome button:focus-visible,.registration-entry button:focus-visible{outline:3px solid #2563eb;outline-offset:3px}
+.player-dashboard button:disabled{opacity:.55;cursor:not-allowed}
+@media(hover:hover){.play-type:hover{transform:translateY(-2px)}.sport-choice:hover{border-color:var(--sport)}}
+@media(max-width:600px){.player-navigation{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;padding:8px}.player-navigation button{font-size:12px;padding:9px 6px;line-height:1.35;min-width:0}.player-dashboard .news-ticker{margin-left:0;margin-right:0;border-radius:12px;font-size:13px;min-height:38px}.player-dashboard .ticker-label{font-size:11px;padding:10px 8px}.player-dashboard .game-picker{padding:16px}.player-welcome{margin-top:8px;padding:22px 16px}.player-welcome .play-type{min-width:0}.player-welcome .play-type strong{font-size:14px}.player-welcome .play-type small{font-size:12px}.player-welcome h1{padding-right:0}.player-dashboard .screen-sport-controls{margin:0}.player-dashboard .screen-sport-controls button{background:transparent!important;border:0;color:#64748b!important;font-size:11px}.sport-choices{grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.sport-choice{font-size:13px;overflow-wrap:anywhere}}
+@media(prefers-reduced-motion:reduce){.play-type,.sport-choice{transition:none}.play-type:hover{transform:none}}
