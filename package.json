@@ -7,7 +7,8 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
-    "test": "vitest run"
+    "test": "vitest run",
+    "prebuild": "node scripts/generate-public-pages.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.57.4",
