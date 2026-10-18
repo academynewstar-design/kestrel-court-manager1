@@ -16,12 +16,12 @@ export default function Tournaments({profile}:{profile:{id:string;full_name:stri
   setError(a.error?.message||b.error?.message||'');setEvents((a.data||[]) as unknown as Event[]);setEntries(b.data||[]);setLoading(false);
  }
  useEffect(()=>{load()},[profile.id]);
- return <section className="card" id="tournaments"><h2>🏀 Basketball / Tournaments</h2><p>Register individually or enter your team. Season and Drop-in players can use their existing account.</p>
+ return <details className="card upcoming-games" id="tournaments"><summary><strong>🏀 Basketball / Tournaments</strong><span className="muted">Expand for details &amp; registration</span></summary><p>Register individually or enter your team. Season and Drop-in players can use their existing account.</p>
   <button className="outline" onClick={load}>Refresh tournaments</button>
   {loading&&<p role="status">Loading tournaments…</p>}{error&&<p role="alert" className="error">Unable to load tournaments: {error}</p>}{message&&<p role="status">{message}</p>}
   {!loading&&!error&&events.length===0&&<p>No tournaments are listed yet.</p>}
   {events.map(event=><TournamentCard key={event.id} event={event} profile={profile} entry={entries.find(e=>e.event_id===event.id)} onSaved={async(text)=>{setMessage(text);await load()}}/>)}
- </section>;
+ </details>;
 }
 function TournamentCard({event,entry,profile,onSaved}:{event:Event;entry?:Entry;profile:{id:string;full_name:string};onSaved:(text:string)=>Promise<void>}){
  const[kind,setKind]=useState<'individual'|'team'>('individual'),[teamName,setTeamName]=useState(''),[names,setNames]=useState(''),[eligible,setEligible]=useState(false),[busy,setBusy]=useState(false),[error,setError]=useState('');
