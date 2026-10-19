@@ -49,11 +49,40 @@ body:has(.player-dashboard),body:has(.player-welcome),body:has(.registration-ent
 .game-picker .picker-selection{font-size:13px;line-height:1.5;margin:0 0 18px;padding:9px 12px;border-radius:10px;background:#edf4ff;color:#244b7f;overflow-wrap:anywhere}
 .picker-selection>span{text-transform:capitalize;font-weight:750}
 .picker-choices{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
-.player-dashboard .picker-choices button{display:flex;align-items:center;justify-content:space-between;gap:8px;text-align:left;min-height:60px;padding:14px;color:#173f7c!important;background:#f8faff!important;border:1px solid #c6d8f2;border-radius:13px;font-size:14px;overflow-wrap:anywhere}
-.picker-choices button>span{font-size:20px;color:#2255a9;flex:none}
+.player-dashboard .picker-choices button{--place:#194aaa;--place-end:#2b65c7;display:flex;align-items:center;justify-content:space-between;gap:8px;text-align:left;min-height:70px;padding:13px 12px;color:#fff!important;background:linear-gradient(125deg,var(--place),var(--place-end))!important;border:1px solid #ffffff40;border-radius:14px;font-size:14px;overflow-wrap:anywhere;box-shadow:0 6px 13px #15376920;transition:transform .15s,filter .15s}
+.player-dashboard .picker-choices button:nth-child(5n+2){--place:#07665e;--place-end:#107c73}
+.player-dashboard .picker-choices button:nth-child(5n+3){--place:#6a299e;--place-end:#8438b4}
+.player-dashboard .picker-choices button:nth-child(5n+4){--place:#9b3f0b;--place-end:#b6510c}
+.player-dashboard .picker-choices button:nth-child(5n+5){--place:#155c43;--place-end:#21744e}
+.picker-place-icon{display:grid;place-items:center;background:#ffffff22;border:1px solid #ffffff30;width:30px;height:32px;border-radius:10px;font-size:18px;flex:none}
+.picker-choice-label{flex:1;min-width:0;line-height:1.35}
+.picker-choice-arrow{display:grid;place-items:center;font-size:18px;color:#fff;flex:none;opacity:.9}
 .picker-locations{grid-template-columns:1fr}
 .game-picker .picker-session-help{font-size:12px;margin-bottom:14px}
-@media(hover:hover){.player-dashboard .picker-choices button:hover{background:#e8f0ff!important;border-color:#3771c9}}
+@media(hover:hover){.player-dashboard .picker-choices button:hover{filter:brightness(1.08);transform:translateY(-2px)}}
+/* Follow the selected sport through city, venue and session choices. */
+.game-picker{--picker:#194aaa;--picker-end:#2b65c7;--picker-soft:#eaf2ff}
+.picker-volleyball,.picker-basketball{--picker:#93400a;--picker-end:#b95008;--picker-soft:#fff0dd}
+.picker-badminton{--picker:#174cb7;--picker-end:#2e68cf;--picker-soft:#eaf2ff}
+.picker-soccer{--picker:#086444;--picker-end:#168452;--picker-soft:#e2f6e9}
+.picker-pickleball{--picker:#6d28a4;--picker-end:#8d39be;--picker-soft:#f3e8ff}
+.picker-heading.colourful{position:relative;isolation:isolate;overflow:hidden;padding:18px;border-radius:16px;background:linear-gradient(120deg,var(--picker),var(--picker-end));color:#fff;margin-bottom:16px;box-shadow:0 8px 16px #15376918}
+.picker-heading.colourful:after{content:'';position:absolute;z-index:-1;right:-25px;top:-45px;width:160px;height:160px;border:22px solid #ffffff12;border-radius:50%;pointer-events:none}
+.picker-heading.colourful .eyebrow{color:#fff;font-size:10px;opacity:.9;margin:0 0 8px}
+.picker-heading.colourful h2{color:#fff;margin:0 0 12px;font-size:26px}
+.picker-heading.colourful .picker-selection{display:block;background:#ffffff1f;border:1px solid #ffffff30;color:#fff;padding:8px 10px;font-size:12px;margin:0;line-height:1.5;border-radius:10px}
+.picker-progress{display:flex;gap:5px;margin-top:14px;max-width:160px}
+.picker-progress>span{height:4px;border-radius:3px;background:#ffffff40;flex:1}
+.picker-progress>span.complete{background:#fff}
+.picker-session-list>label{font-size:13px;font-weight:700;color:#183a6b}
+.picker-session-list select{border:2px solid var(--picker);background:var(--picker-soft);border-radius:12px}
+.picker-session-list>.session{display:block;background:linear-gradient(125deg,var(--picker-soft),#fff 75%);border:1px solid #d3e0ee;border-left:5px solid var(--picker);border-radius:14px;margin:14px 0;padding:16px;box-shadow:0 5px 12px #1537690b;overflow-wrap:anywhere}
+.picker-session-list>.session>div>strong{display:block;background:var(--picker);color:#fff;padding:10px 12px;border-radius:9px;font-size:14px;margin-bottom:12px}
+.picker-session-list>.session>p{background:#fff4ce;color:#684a0b;padding:10px 12px;border-radius:10px;font-size:12px;line-height:1.5}
+.picker-session-list>.session .rowactions{margin-top:12px}
+.picker-session-list>.notice{background:var(--picker-soft);border-color:var(--picker)}
+@media(max-width:380px){.player-dashboard .picker-choices button{gap:6px;padding:12px 9px;font-size:12px}.picker-place-icon{width:24px;height:28px;font-size:16px}.picker-heading.colourful{padding:15px}.picker-heading.colourful h2{font-size:24px}}
+@media(prefers-reduced-motion:reduce){.player-dashboard .picker-choices button{transition:none}.player-dashboard .picker-choices button:hover{transform:none}}
 .sport-choices{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px}
 .sport-choice{--sport:#1649b0;--sport-end:#3275e6;background:linear-gradient(140deg,var(--sport),var(--sport-end));color:#fff;border:2px solid transparent;min-height:102px;display:flex;position:relative;flex-direction:column;align-items:center;justify-content:center;gap:9px;padding:14px 7px;text-transform:capitalize;font-size:14px;border-radius:16px;box-shadow:0 7px 14px #1033681a;transition:transform .15s,box-shadow .15s}
 .sport-volleyball{--sport:#a84609;--sport-end:#b95008}
