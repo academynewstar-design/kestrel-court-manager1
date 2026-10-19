@@ -41,6 +41,19 @@ body:has(.player-dashboard),body:has(.player-welcome),body:has(.registration-ent
 .game-picker h2{color:#0e2a56;font-size:26px;letter-spacing:-.035em;line-height:1.15;margin:6px 0 10px}
 .game-picker>p{font-size:13px;line-height:1.6;margin:0 0 18px;color:#4c607b}
 .game-picker h3{font-size:15px;color:#183a6b;margin:20px 0 12px}
+/* Each selection replaces the previous step instead of extending the page. */
+.picker-navigation{display:flex;justify-content:space-between;gap:10px;margin:0 0 16px}
+.player-dashboard .picker-navigation button{font-size:12px;min-height:40px;padding:8px 12px;background:#edf4ff!important;color:#173f7c!important;border-color:#c6d8f2}
+.game-picker{scroll-margin-top:12px}
+.game-picker h2[tabindex]:focus{outline:none}
+.game-picker .picker-selection{font-size:13px;line-height:1.5;margin:0 0 18px;padding:9px 12px;border-radius:10px;background:#edf4ff;color:#244b7f;overflow-wrap:anywhere}
+.picker-selection>span{text-transform:capitalize;font-weight:750}
+.picker-choices{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.player-dashboard .picker-choices button{display:flex;align-items:center;justify-content:space-between;gap:8px;text-align:left;min-height:60px;padding:14px;color:#173f7c!important;background:#f8faff!important;border:1px solid #c6d8f2;border-radius:13px;font-size:14px;overflow-wrap:anywhere}
+.picker-choices button>span{font-size:20px;color:#2255a9;flex:none}
+.picker-locations{grid-template-columns:1fr}
+.game-picker .picker-session-help{font-size:12px;margin-bottom:14px}
+@media(hover:hover){.player-dashboard .picker-choices button:hover{background:#e8f0ff!important;border-color:#3771c9}}
 .sport-choices{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px}
 .sport-choice{--sport:#1649b0;--sport-end:#3275e6;background:linear-gradient(140deg,var(--sport),var(--sport-end));color:#fff;border:2px solid transparent;min-height:102px;display:flex;position:relative;flex-direction:column;align-items:center;justify-content:center;gap:9px;padding:14px 7px;text-transform:capitalize;font-size:14px;border-radius:16px;box-shadow:0 7px 14px #1033681a;transition:transform .15s,box-shadow .15s}
 .sport-volleyball{--sport:#a84609;--sport-end:#b95008}
