@@ -47,7 +47,7 @@ describe('Group Drop-in booking',()=>{
  it('clears a previous fetch error when refreshing succeeds',async()=>{
   rpc.mockResolvedValueOnce({data:null,error:{message:'TypeError: Failed to fetch'}});
   render(<AdminGroupApprovals/>);
-  expect((await screen.findByRole('alert')).textContent).toContain('Failed to fetch');
+  expect((await screen.findByRole('alert')).textContent).toContain('Could not connect');
   rpc.mockResolvedValueOnce({data:[group],error:null});
   fireEvent.click(screen.getByRole('button',{name:'Refresh'}));
   await screen.findByRole('button',{name:'Approve 4 people'});
@@ -60,6 +60,37 @@ describe('Group Drop-in booking',()=>{
   fireEvent.click(screen.getByRole('button',{name:'Refresh'}));
   await waitFor(()=>expect(screen.queryByRole('alert')).toBeNull());
   expect(screen.queryByText(/Group Drop-in approvals/)).toBeNull();
+ });
+ it('recovers on reconnect without reporting a failed load as zero approvals',async()=>{
+  rpc.mockResolvedValueOnce({data:null,error:{message:'TypeError: Failed to fetch'}});
+  render(<AdminGroupApprovals/>);
+  await screen.findByRole('alert');
+  expect(screen.getByRole('heading',{name:'Group Drop-in approvals'})).toBeTruthy();
+  rpc.mockResolvedValueOnce({data:[group],error:null});
+  fireEvent(window,new Event('online'));
+  await screen.findByRole('button',{name:'Approve 4 people'});
+  expect(screen.queryByRole('alert')).toBeNull();
+ });
+ it('handles thrown network failures and retries when returning to the page',async()=>{
+  rpc.mockRejectedValueOnce(new TypeError('Failed to fetch'));
+  render(<AdminGroupApprovals/>);
+  await screen.findByRole('alert');
+  rpc.mockResolvedValueOnce({data:[group],error:null});
+  fireEvent(window,new Event('focus'));
+  await screen.findByRole('button',{name:'Approve 4 people'});
+  expect(screen.queryByRole('alert')).toBeNull();
+ });
+ it('does not overlap refresh requests',async()=>{
+  let complete!:(value:any)=>void;
+  rpc.mockImplementationOnce(()=>new Promise(resolve=>{complete=resolve}));
+  const view=render(<AdminGroupApprovals/>);
+  fireEvent(window,new Event('online'));fireEvent(window,new Event('focus'));
+  expect(rpc).toHaveBeenCalledTimes(1);
+  complete({data:[group],error:null});
+  await screen.findByRole('button',{name:'Approve 4 people'});
+  view.unmount();
+  fireEvent(window,new Event('online'));fireEvent(window,new Event('focus'));
+  expect(rpc).toHaveBeenCalledTimes(1);
  });
  it('shows Tim + 9 as one row while preserving ten occupied spots',()=>{
   const members=['tim',...Array.from({length:9},(_,i)=>'guest-'+i)];

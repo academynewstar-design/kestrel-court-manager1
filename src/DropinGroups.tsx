@@ -51,11 +51,34 @@ export function MyGroupRequests({requests,onChanged}:{requests:DropinGroup[];onC
 
 export function AdminGroupApprovals(){
  const[requests,setRequests]=useState<DropinGroup[]>([]),[notes,setNotes]=useState<Record<string,string>>({}),[checked,setChecked]=useState<Record<string,boolean>>({}),[busy,setBusy]=useState<number|null>(null),[error,setError]=useState(''),[message,setMessage]=useState('');
- async function load(){const{data,error}=await supabase.rpc('list_dropin_groups');if(error)setError(error.message);else{setError('');setRequests((data||[]).filter((g:DropinGroup)=>g.status==='pending'))}}
- useEffect(()=>{load();const t=setInterval(load,30000);window.addEventListener('kestrel-group-bookings-changed',load);return()=>{clearInterval(t);window.removeEventListener('kestrel-group-bookings-changed',load)}},[]);
+ const[loading,setLoading]=useState(false),[loaded,setLoaded]=useState(false);
+ const loadingRef=useRef(false);
+ async function load(){
+  if(loadingRef.current)return;
+  loadingRef.current=true;setLoading(true);
+  try{
+   const{data,error}=await supabase.rpc('list_dropin_groups');
+   if(error)throw error;
+   setError('');setLoaded(true);setRequests((data||[]).filter((g:DropinGroup)=>g.status==='pending'));
+  }catch(e:any){
+   const detail=e?.message||'';
+   setError(/failed to fetch|networkerror|network request failed|load failed/i.test(detail)
+    ?'Could not connect to load group approvals. Check your connection and tap Refresh. We will also retry when you return to this page or reconnect.'
+    :detail||'Could not load group approvals. Tap Refresh to try again.');
+  }finally{loadingRef.current=false;setLoading(false)}
+ }
+ useEffect(()=>{
+  load();
+  const refresh=()=>{if(document.visibilityState!=='hidden')load()};
+  const t=setInterval(refresh,30000);
+  window.addEventListener('online',refresh);window.addEventListener('focus',refresh);
+  document.addEventListener('visibilitychange',refresh);
+  window.addEventListener('kestrel-group-bookings-changed',load);
+  return()=>{clearInterval(t);window.removeEventListener('online',refresh);window.removeEventListener('focus',refresh);document.removeEventListener('visibilitychange',refresh);window.removeEventListener('kestrel-group-bookings-changed',load)};
+ },[]);
  async function review(g:DropinGroup,approve:boolean){setBusy(g.id);setError('');setMessage('');const{error}=await supabase.rpc('review_dropin_group',{p_request_id:g.id,p_approve:approve,p_note:notes[String(g.id)]||null});if(error)setError(error.message);else{setMessage(approve?g.owner_name+' + '+(g.total_people-1)+' approved. All '+g.total_people+' places are now on the roster.':'Group request rejected; held spots released.');await load();changed()}setBusy(null)}
  if(!requests.length&&!error&&!message)return null;
- return <section className="card"><div className="sectionhead"><h2>Group Drop-in approvals ({requests.length})</h2><button className="outline" onClick={load}>Refresh</button></div>{error&&<p className="error" role="alert">{error}</p>}{message&&<p className="success" role="status">{message}</p>}{requests.map(g=><article className="notice" key={g.id}><h3>{g.owner_name} + {g.total_people-1} · {g.total_people} people</h3><p>{g.sport} · {g.location} · {g.court}<br/>{when(g)}</p><p>Guests: {g.guest_names.join(', ')}</p><p>{money(g.total_price)} total · hold expires {expiry(g)} Toronto time</p><label>Optional reply / review note<input maxLength={500} value={notes[String(g.id)]||''} onChange={e=>setNotes(old=>({...old,[g.id]:e.target.value}))}/></label><label style={{display:'flex',alignItems:'flex-start',gap:8}}><input type="checkbox" style={{width:'auto'}} checked={!!checked[String(g.id)]} onChange={e=>setChecked(old=>({...old,[g.id]:e.target.checked}))}/>I checked the guest names and activity eligibility. Capacity will be checked again on approval.</label><div className="rowactions"><button disabled={busy!==null||!checked[String(g.id)]} onClick={()=>review(g,true)}>{busy===g.id?'Saving…':'Approve '+g.total_people+' people'}</button><button className="outline" disabled={busy!==null} onClick={()=>review(g,false)}>Reject</button></div></article>)}</section>;
+ return <section className="card"><div className="sectionhead"><h2>Group Drop-in approvals{loaded?' ('+requests.length+')':''}</h2><button className="outline" disabled={loading} onClick={load}>{loading?'Loading…':'Refresh'}</button></div>{error&&<p className="error" role="alert">{error}</p>}{message&&<p className="success" role="status">{message}</p>}{requests.map(g=><article className="notice" key={g.id}><h3>{g.owner_name} + {g.total_people-1} · {g.total_people} people</h3><p>{g.sport} · {g.location} · {g.court}<br/>{when(g)}</p><p>Guests: {g.guest_names.join(', ')}</p><p>{money(g.total_price)} total · hold expires {expiry(g)} Toronto time</p><label>Optional reply / review note<input maxLength={500} value={notes[String(g.id)]||''} onChange={e=>setNotes(old=>({...old,[g.id]:e.target.value}))}/></label><label style={{display:'flex',alignItems:'flex-start',gap:8}}><input type="checkbox" style={{width:'auto'}} checked={!!checked[String(g.id)]} onChange={e=>setChecked(old=>({...old,[g.id]:e.target.checked}))}/>I checked the guest names and activity eligibility. Capacity will be checked again on approval.</label><div className="rowactions"><button disabled={busy!==null||!checked[String(g.id)]} onClick={()=>review(g,true)}>{busy===g.id?'Saving…':'Approve '+g.total_people+' people'}</button><button className="outline" disabled={busy!==null} onClick={()=>review(g,false)}>Reject</button></div></article>)}</section>;
 }
 
 export function collapseGroupRoster(rows:any[],groups:DropinGroup[]){
