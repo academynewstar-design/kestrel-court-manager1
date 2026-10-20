@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import {afterEach,describe,it,expect,vi} from 'vitest';
 import {render,screen,fireEvent,cleanup} from '@testing-library/react';
-import {ExclusiveCourtList,RosterCourtControl,exclusiveCourtText} from '../src/ActivityRosterTools';
+import {CourtRoster,ExclusiveCourtList,RosterCourtControl,exclusiveCourtText} from '../src/ActivityRosterTools';
 afterEach(cleanup);
 describe('Activity roster court tools',()=>{
  it('shows the reserved court and named group even without player registrations',()=>{
@@ -21,4 +21,14 @@ describe('Activity roster court tools',()=>{
   render(<RosterCourtControl name="Player" courts={['Court 2']} value="Court 2" busy={true} changed={true} onChange={()=>{}} onSave={()=>{}}/>);
   expect(screen.getByRole('button',{name:'Saving…'}).hasAttribute('disabled')).toBe(true);
  });
+});
+
+it('groups the displayed roster by effective court in numeric order, restarting numbering in each court',()=>{
+ const players=[{name:'Alice',sessionCourt:'Court 10'},{name:'Bob',sessionCourt:'Court 1'},{name:'Carol',sessionCourt:'Court 2',party_size:3}];
+ const overrides:Record<string,string>={Bob:'Court 2'};
+ render(<CourtRoster players={players} courtFor={p=>overrides[p.name]||p.sessionCourt} renderPlayer={(p,i)=><div key={p.name}>{i+1}. {p.name}</div>}/>);
+ const groups=screen.getAllByRole('region');
+ expect(groups.map(g=>g.getAttribute('aria-label'))).toEqual(['Court 2 roster','Court 10 roster']);
+ expect(groups[0].textContent).toBe('Court 2 · 4 going1. Bob2. Carol');
+ expect(groups[1].textContent).toBe('Court 10 · 1 going1. Alice');
 });
