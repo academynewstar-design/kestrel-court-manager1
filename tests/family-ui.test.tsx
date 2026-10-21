@@ -11,7 +11,7 @@ const owner={id:'owner',full_name:'Morgan Parent',player_type:'permanent',reques
 const schedule={id:1,weekday:'Monday',schedule_label:'Monday 6–7:45 PM',sports:{name:'badminton'},locations:{name:'David Saint Jacques',city:'Kitchener'}};
 let members:any[]=[];
 let profile:any=owner;
-function query(result:any){const q:any={then:(resolve:any)=>Promise.resolve(result).then(resolve)};for(const k of ['select','eq','order','gte','limit','in','not','or','single'])q[k]=()=>q;return q;}
+function query(result:any){const q:any={then:(resolve:any)=>Promise.resolve(result).then(resolve)};for(const k of ['select','eq','order','gte','limit','in','not','or','single','maybeSingle'])q[k]=()=>q;return q;}
 beforeEach(()=>{
  members=[];profile=owner;vi.clearAllMocks();window.localStorage.clear();
  mock.from.mockImplementation((table:string)=>query({data:table==='profiles'?profile:table==='recurring_schedules'?[schedule]:[],error:null}));
