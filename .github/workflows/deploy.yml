@@ -37,3 +37,4 @@ jobs:
 # Manual deployment retrigger: Season dashboard assigned sessions only.
 # Manual redeploy requested for grouped badminton court roster (cd20dcc).
 # Manual redeployment requested for court dropdown and WhatsApp roster (9c11608).
+# Redeploy requested 2026-10-22: publish latest roster and court allocation changes.
