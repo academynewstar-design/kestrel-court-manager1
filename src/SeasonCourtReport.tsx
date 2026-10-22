@@ -8,6 +8,7 @@ export default function SeasonCourtReport() {
   const [loading, setLoading] = useState(true), [error, setError] = useState('');
   const [refresh, setRefresh] = useState(0), [locations, setLocations] = useState<string[]>([]);
   const [sport, setSport] = useState(''), [day, setDay] = useState(''), [search, setSearch] = useState('');
+  const [moving, setMoving] = useState(''), [moveError, setMoveError] = useState('');
   const [copyMessage, setCopyMessage] = useState(''), [manualCopy, setManualCopy] = useState(false);
   useEffect(() => {
     let active = true;
@@ -36,6 +37,24 @@ export default function SeasonCourtReport() {
   const visible = filterSeasonCourts(rows, locations, sport, day, search);
   const groups = groupSeasonCourts(visible);
   const text = seasonCourtText(visible);
+  async function movePermanent(player: SeasonCourtRow, target: string) {
+    if (target === player.court) return;
+    setMoveError('');
+    const occupied = rows.filter(r => r.scheduleId === player.scheduleId && r.court === target && r.key !== player.key).length;
+    if (occupied >= 5) { setMoveError(target + ' already has 5 Season players. Transfer cancelled.'); return; }
+    if (!window.confirm('Permanently move ' + player.player + ' to ' + target + ' for ' + player.day + ' · ' + player.schedule + '? This updates the recurring assignment for future weeks.')) return;
+    setMoving(player.key);
+    try {
+      const {data, error} = await supabase.from('recurring_permanent_requests')
+        .update({court: target}).eq('user_id', player.userId).eq('recurring_schedule_id', player.scheduleId)
+        .eq('status', 'approved').select('id');
+      if (error) throw error;
+      if (!data?.length) throw new Error('No assignment was updated. Check administrator permissions.');
+      setCopyMessage(player.player + ' permanently assigned to ' + target + '.');
+      setRefresh(v => v + 1);
+    } catch (e) { setMoveError(e instanceof Error ? e.message : 'Transfer failed.'); }
+    finally { setMoving(''); }
+  }
   async function copy() {
     try { await navigator.clipboard.writeText(text); setCopyMessage('Combined report copied. Paste it into WhatsApp.'); setManualCopy(false); }
     catch { setManualCopy(true); setCopyMessage('Select and copy the report below.'); }
@@ -47,7 +66,7 @@ export default function SeasonCourtReport() {
   }
   return <section className="card">
     <div className="sectionhead"><h2>Season Players by Court</h2><button className="outline" disabled={loading} onClick={() => setRefresh(v => v + 1)}>Refresh</button></div>
-    <p className="muted">Approved Season players and their regular weekly assignments across all locations. Temporary Not Going / vacation choices are included. For attendance or a court change on a particular date, use Activity roster.</p>
+    <p className="muted">Approved Season players and their regular weekly assignments across all locations. Temporary Not Going / vacation choices are included. Use Permanent court to change the weekly assignment; date-specific overrides are managed separately. For attendance or a court change on a particular date, use Activity roster.</p>
     <div className="grid2">
       <label>Sport<select value={sport} onChange={e => setSport(e.target.value)}><option value="">All sports</option>{[...new Set(rows.map(r => r.sport))].sort().map(s => <option key={s}>{s}</option>)}</select></label>
       <label>Day<select value={day} onChange={e => setDay(e.target.value)}><option value="">All days</option>{weekdays.map(d => <option key={d}>{d}</option>)}</select></label>
@@ -66,13 +85,14 @@ export default function SeasonCourtReport() {
     </div>
     {copyMessage && <p role="status">{copyMessage}</p>}
     {manualCopy && <label>Combined report<textarea readOnly rows={12} value={text} onFocus={e => e.target.select()}/></label>}
+    {moveError && <p className="error" role="alert">{moveError}</p>}
     {error && <p className="error" role="alert">Could not load the report: {error}</p>}
     {loading ? <p role="status">Loading Season assignments…</p> : !error && <>
       <p><strong>{new Set(visible.map(r => r.userId)).size} Season players</strong> · {visible.length} weekly assignments · {new Set(visible.map(r => r.locationId)).size} locations</p>
       {groups.map(g => <div className="notice" key={g.key}>
         <h3>{g.row.location}{g.row.city ? ' · ' + g.row.city : ''}</h3>
         <p><strong>{g.row.sport} · {g.row.day}</strong> · {g.row.schedule}</p>
-        {[...g.courts].map(([court, players]) => <div key={court}><h4>{court} · {players.length} players</h4><ol>{players.map(p => <li key={p.key}>{p.player} <span className="muted">(S)</span></li>)}</ol></div>)}
+        {[...g.courts].map(([court, players]) => <div key={court}><h4>{court} · {players.length} players</h4><ol>{players.map(p => <li key={p.key}>{p.player} <span className="muted">(S)</span>{p.sport.toLowerCase() === 'badminton' && <label style={{display:'block',maxWidth:280}}>Permanent court <select aria-label={'Permanent court for ' + p.player} value={p.court} disabled={!!moving} onChange={e => movePermanent(p,e.target.value)}><option value={p.court}>{p.court}</option>{Array.from({length:6},(_,i)=>'Court '+(i+1)).filter(v=>v!==p.court).map(v=><option key={v} value={v}>{v}</option>)}</select></label>}</li>)}</ol></div>)}
       </div>)}
       {!visible.length && <p className="muted">No approved Season assignments match the selected filters.</p>}
     </>}
