@@ -9,6 +9,7 @@ export default function SeasonCourtReport() {
   const [refresh, setRefresh] = useState(0), [locations, setLocations] = useState<string[]>([]);
   const [sport, setSport] = useState(''), [day, setDay] = useState(''), [search, setSearch] = useState('');
   const [moving, setMoving] = useState(''), [moveError, setMoveError] = useState('');
+  const [pendingCourts, setPendingCourts] = useState<Record<string,string>>({});
   const [copyMessage, setCopyMessage] = useState(''), [manualCopy, setManualCopy] = useState(false);
   useEffect(() => {
     let active = true;
@@ -50,6 +51,7 @@ export default function SeasonCourtReport() {
         .eq('status', 'approved').select('id');
       if (error) throw error;
       if (!data?.length) throw new Error('No assignment was updated. Check administrator permissions.');
+      setPendingCourts(v => { const next = {...v}; delete next[player.key]; return next; });
       setCopyMessage(player.player + ' permanently assigned to ' + target + '.');
       setRefresh(v => v + 1);
     } catch (e) { setMoveError(e instanceof Error ? e.message : 'Transfer failed.'); }
@@ -66,7 +68,7 @@ export default function SeasonCourtReport() {
   }
   return <section className="card">
     <div className="sectionhead"><h2>Season Players by Court</h2><button className="outline" disabled={loading} onClick={() => setRefresh(v => v + 1)}>Refresh</button></div>
-    <p className="muted">Approved Season players and their regular weekly assignments across all locations. Temporary Not Going / vacation choices are included. Use Permanent court to change the weekly assignment; date-specific overrides are managed separately. For attendance or a court change on a particular date, use Activity roster.</p>
+    <p className="muted">Approved Season players and their regular weekly assignments across all locations. Temporary Not Going / vacation choices are included. Choose a Permanent court and click Save permanently to update the weekly assignment; date-specific overrides are managed separately. For attendance or a court change on a particular date, use Activity roster.</p>
     <div className="grid2">
       <label>Sport<select value={sport} onChange={e => setSport(e.target.value)}><option value="">All sports</option>{[...new Set(rows.map(r => r.sport))].sort().map(s => <option key={s}>{s}</option>)}</select></label>
       <label>Day<select value={day} onChange={e => setDay(e.target.value)}><option value="">All days</option>{weekdays.map(d => <option key={d}>{d}</option>)}</select></label>
@@ -92,7 +94,7 @@ export default function SeasonCourtReport() {
       {groups.map(g => <div className="notice" key={g.key}>
         <h3>{g.row.location}{g.row.city ? ' · ' + g.row.city : ''}</h3>
         <p><strong>{g.row.sport} · {g.row.day}</strong> · {g.row.schedule}</p>
-        {[...g.courts].map(([court, players]) => <div key={court}><h4>{court} · {players.length} players</h4><ol>{players.map(p => <li key={p.key}>{p.player} <span className="muted">(S)</span>{p.sport.toLowerCase() === 'badminton' && <label style={{display:'block',maxWidth:280}}>Permanent court <select aria-label={'Permanent court for ' + p.player} value={p.court} disabled={!!moving} onChange={e => movePermanent(p,e.target.value)}><option value={p.court}>{p.court}</option>{Array.from({length:6},(_,i)=>'Court '+(i+1)).filter(v=>v!==p.court).map(v=><option key={v} value={v}>{v}</option>)}</select></label>}</li>)}</ol></div>)}
+        {[...g.courts].map(([court, players]) => <div key={court}><h4>{court} · {players.length} players</h4><ol>{players.map(p => <li key={p.key}>{p.player} <span className="muted">(S)</span>{p.sport.toLowerCase() === 'badminton' && <label style={{display:'block',maxWidth:280}}>Permanent court <select aria-label={'Permanent court for ' + p.player} value={pendingCourts[p.key] ?? p.court} disabled={!!moving} onChange={e => setPendingCourts(v => ({...v, [p.key]: e.target.value}))}><option value={p.court}>{p.court}</option>{Array.from({length:6},(_,i)=>'Court '+(i+1)).filter(v=>v!==p.court).map(v=><option key={v} value={v}>{v}</option>)}</select><button type="button" style={{marginTop:8}} disabled={!!moving || !pendingCourts[p.key] || pendingCourts[p.key] === p.court} onClick={() => movePermanent(p, pendingCourts[p.key])}>{moving === p.key ? 'Saving…' : 'Save permanently'}</button></label>}</li>)}</ol></div>)}
       </div>)}
       {!visible.length && <p className="muted">No approved Season assignments match the selected filters.</p>}
     </>}
