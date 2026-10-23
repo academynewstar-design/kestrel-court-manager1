@@ -120,3 +120,16 @@ body{background:linear-gradient(180deg,#eef4fb 0,#f8fafc 320px)}
 .game-picker>p{font-size:14px;line-height:1.4;margin:0 0 12px}
 .game-picker>h3{font-size:17px;margin:12px 0 8px}
 @media(max-width:380px){.upcoming-games summary span{display:block;margin-left:16px}}
+
+/* Compact admin roster: court-ordered rows, readable on phones without giant cards. */
+.compact-roster-scroll{width:100%;max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch;margin:12px 0 20px;border:1px solid #dbe3ed;border-radius:12px;background:#fff}
+.compact-roster-table{width:100%;border-collapse:collapse;table-layout:auto;font-size:13px;line-height:1.35}
+.compact-roster-table th{position:sticky;top:0;z-index:1;text-align:left;background:#eaf1f9;color:#102d50;font-size:12px;font-weight:800;padding:10px 8px;white-space:nowrap}
+.compact-roster-table td{border-top:1px solid #e6ebf1;padding:7px 8px;vertical-align:middle}
+.compact-roster-table tbody tr:nth-child(even){background:#f8fafc}
+.compact-roster-table td:first-child{min-width:125px;overflow-wrap:anywhere}
+.compact-roster-table select{width:100%;min-width:82px;margin:0;padding:7px 23px 7px 7px;font-size:12px;line-height:1.2;border-radius:8px}
+.compact-roster-table button{width:auto;min-width:0;white-space:nowrap;margin:0;padding:7px 9px;font-size:12px;line-height:1.2;border-radius:8px}
+.compact-roster-table .compact-roster-actions{display:flex;flex-wrap:wrap;gap:5px;align-items:center}
+.compact-roster-table .compact-roster-actions button:disabled{opacity:.45;cursor:not-allowed}
+@media(max-width:650px){.compact-roster-table{min-width:590px}.compact-roster-table td:first-child{min-width:145px}.compact-roster-table th,.compact-roster-table td{padding:7px 6px}.compact-roster-scroll{margin-left:0;margin-right:0}}
