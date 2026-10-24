@@ -48,9 +48,9 @@ export async function loadCalendarMonth(month: string) {
   }
 }
 
-export default function AdminAvailabilityCalendar({locations, sports, revision, onChanged, renderSession}: {
+export default function AdminAvailabilityCalendar({locations, sports, revision, onChanged, renderSession, readOnly = false}: {
   locations: Location[]; sports: Sport[]; revision: unknown; onChanged: () => void;
-  renderSession: (session: CalendarSession) => ReactNode;
+  renderSession: (session: CalendarSession) => ReactNode; readOnly?: boolean;
 }) {
   const [date, setDate] = useState(torontoDate);
   const [month, setMonth] = useState(() => torontoDate().slice(0, 7));
@@ -109,7 +109,7 @@ export default function AdminAvailabilityCalendar({locations, sports, revision, 
   const days = new Date(year, monthNumber, 0).getDate();
   const current = torontoDate();
   return <section className="card admin-calendar" aria-labelledby="admin-calendar-title">
-    <div className="sectionhead"><div><h2 id="admin-calendar-title">School availability calendar</h2>
+    <div className="sectionhead"><div><h2 id="admin-calendar-title">{readOnly ? 'Activity availability calendar' : 'School availability calendar'}</h2>
       <p className="muted">Tap a date to see schools and their session times.</p></div>
       <button className="outline" onClick={() => chooseDate(current)}>Today</button></div>
     <div className="calendar-filters">
@@ -149,9 +149,9 @@ export default function AdminAvailabilityCalendar({locations, sports, revision, 
           <div className="calendar-school-heading"><div><h4>{school.location.name}</h4><small>{school.location.city}</small></div><span className="calendar-status">{unavailable ? 'Unavailable' : 'Available'}</span></div>
           {times.map(s => <p className="calendar-session-time" key={s.id}>{s.sports?.name} · {time(s.start_time)}–{time(s.end_time)}</p>)}
           {unavailable && <p>School not available on this day.</p>}
-          <button className={unavailable ? 'outline' : 'danger'} disabled={saving !== null}
-            onClick={() => toggle(school.location, unavailable)}>{saving === school.location.id ? 'Saving…' : unavailable ? 'Mark school available' : 'Mark school unavailable'}</button>
-          {school.sessions.length > 0 && <details><summary>Manage session details</summary>{school.sessions.map(renderSession)}</details>}
+          {!readOnly && <button className={unavailable ? 'outline' : 'danger'} disabled={saving !== null}
+            onClick={() => toggle(school.location, unavailable)}>{saving === school.location.id ? 'Saving…' : unavailable ? 'Mark school available' : 'Mark school unavailable'}</button>}
+          {!readOnly && school.sessions.length > 0 && <details><summary>Manage session details</summary>{school.sessions.map(renderSession)}</details>}
         </article>;
       })}
       {!scheduled.length && schools.length > 0 && <p className="notice">No sessions scheduled for {query ? 'this school search' : 'these filters'} on this date. This does not mean the school is unavailable.</p>}
