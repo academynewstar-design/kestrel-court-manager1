@@ -39,3 +39,5 @@ jobs:
 # Manual redeployment requested for court dropdown and WhatsApp roster (9c11608).
 # Redeploy requested 2026-10-22: publish latest roster and court allocation changes.
 # Redeploy player calendar tab 2026-10-23.
+
+# Redeploy permanent court assignment interface 2026-10-25.
