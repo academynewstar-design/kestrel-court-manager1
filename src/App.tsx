@@ -335,6 +335,20 @@ function AdminPermanentRequests(){const[rows,setRows]=useState<any[]>([]);const[
  const courtOptions=Array.from({length:maxCourts},(_,i)=>'Court '+(i+1));
  const named=(id:any)=>{const p=players.find((x:any)=>String(x.id)===String(id));return p?.full_name||p?.email||'Player'};
  const sorted=rows.slice().sort((a:any,b:any)=>Number((draft[String(a.id)]?.court||'').match(/\d+/)?.[0]||0)-Number((draft[String(b.id)]?.court||'').match(/\d+/)?.[0]||0)||named(a.user_id).localeCompare(named(b.user_id)));
+ async function removePermanent(r:any){
+  if(busy)return;
+  const name=named(r.user_id);
+  if(!window.confirm('Remove '+name+' permanently from this weekly session? Future Season bookings will be cancelled. Their account and other sessions will remain unchanged.'))return;
+  setBusy(true);setMsg('Removing '+name+'…');
+  try{
+   const {error}=await supabase.rpc('admin_remove_recurring_player',{p_request_id:r.id});
+   if(error)throw error;
+   setRows(v=>v.filter((x:any)=>x.id!==r.id));
+   setDraft(v=>{const next={...v};delete next[String(r.id)];return next});
+   setMsg(name+' removed from this recurring session.');
+  }catch(e:any){setMsg('Removal failed: '+(e?.message||String(e)))}
+  finally{setBusy(false)}
+ }
  async function save(){
   if(!schedule||busy)return;
   const changed=rows.filter((r:any)=>draft[String(r.id)]&&(draft[String(r.id)].court!==(r.court||'Court 1')||draft[String(r.id)].level!==(r.player_level||'Intermediate')));
@@ -364,7 +378,7 @@ function AdminPermanentRequests(){const[rows,setRows]=useState<any[]>([]);const[
  {msg&&<p role="status">{msg}</p>}
  <div className="grid2"><label>Location<select value={school} onChange={e=>{setSchool(e.target.value);setSchedule('')}}><option value="">Choose location</option>{locations.map((l:any)=><option key={l.id} value={l.id}>{l.name}</option>)}</select></label>
  <label>Session time<select value={schedule} onChange={e=>setSchedule(e.target.value)}><option value="">Choose day and time</option>{schedules.filter((s:any)=>String(s.location_id)===school).map((s:any)=><option key={s.id} value={s.id}>{s.weekday} · {s.schedule_label||((s.start_time||'')+'–'+(s.end_time||''))} · {s.sports?.name}</option>)}</select></label></div>
- {schedule&&<><div className="muted">{rows.length} permanent players · Sorted by court</div><div style={{overflowX:'auto'}}><table style={{width:'100%',minWidth:340}}><thead><tr><th>Player</th><th>Court</th><th>Level</th></tr></thead><tbody>{sorted.map((r:any)=>{const d=draft[String(r.id)]||{court:'Court 1',level:'Intermediate'};return <tr key={r.id}><td>{named(r.user_id)}</td><td>{badminton?<select aria-label={'Court for '+named(r.user_id)} value={d.court} onChange={e=>setDraft(v=>({...v,[String(r.id)]:{...d,court:e.target.value}}))}>{courtOptions.map(c=><option key={c} value={c}>{c}</option>)}</select>:<span>—</span>}</td><td><select aria-label={'Level for '+named(r.user_id)} value={d.level} onChange={e=>setDraft(v=>({...v,[String(r.id)]:{...d,level:e.target.value}}))}>{!['Low-Intermediate','Intermediate','Advanced'].includes(d.level)&&<option value={d.level}>{d.level}</option>}{['Low-Intermediate','Intermediate','Advanced'].map(l=><option key={l} value={l}>{l}</option>)}</select></td></tr>})}</tbody></table></div>
+ {schedule&&<><div className="muted">{rows.length} permanent players · Sorted by court</div><div style={{overflowX:'auto'}}><table style={{width:'100%',minWidth:340}}><thead><tr><th>Player</th><th>Court</th><th>Level</th><th>Remove</th></tr></thead><tbody>{sorted.map((r:any)=>{const d=draft[String(r.id)]||{court:'Court 1',level:'Intermediate'};return <tr key={r.id}><td>{named(r.user_id)}</td><td>{badminton?<select aria-label={'Court for '+named(r.user_id)} value={d.court} onChange={e=>setDraft(v=>({...v,[String(r.id)]:{...d,court:e.target.value}}))}>{courtOptions.map(c=><option key={c} value={c}>{c}</option>)}</select>:<span>—</span>}</td><td><select aria-label={'Level for '+named(r.user_id)} value={d.level} onChange={e=>setDraft(v=>({...v,[String(r.id)]:{...d,level:e.target.value}}))}>{!['Low-Intermediate','Intermediate','Advanced'].includes(d.level)&&<option value={d.level}>{d.level}</option>}{['Low-Intermediate','Intermediate','Advanced'].map(l=><option key={l} value={l}>{l}</option>)}</select></td><td><button type="button" className="outline danger" aria-label={'Remove '+named(r.user_id)+' from recurring session'} title="Remove from this weekly session" disabled={busy} onClick={()=>removePermanent(r)}>Remove</button></td></tr>})}</tbody></table></div>
  <button disabled={busy||!rows.length} onClick={save}>{busy?'Saving…':'Save Permanently'}</button></>}
  </section>
 }
