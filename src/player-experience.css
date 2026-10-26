@@ -1,13 +1,13 @@
 /* The player experience: navy courts, vivid sport colours, and compact navigation. */
 .eyebrow{display:block;color:#116453;font-size:11px;letter-spacing:.12em;font-weight:800;margin-bottom:8px}
 .sports-artwork{display:block;flex:none;width:210px;color:#fff;pointer-events:none}
-.play-banner{display:flex;align-items:center;justify-content:space-between;position:relative;isolation:isolate;overflow:hidden;min-height:132px;padding:18px 24px;border-radius:20px;background:linear-gradient(115deg,#082b60,#164fb0);color:#fff;box-shadow:0 10px 24px #10336824}
+.play-banner{display:flex;align-items:center;justify-content:space-between;position:relative;isolation:isolate;overflow:hidden;min-height:92px;padding:12px 20px;border-radius:20px;background:linear-gradient(115deg,#082b60,#164fb0);color:#fff;box-shadow:0 10px 24px #10336824}
 .play-banner:before{content:'';position:absolute;inset:0;z-index:-1;background:radial-gradient(ellipse at 90% 100%,#00c8b660,transparent 60%)}
 .banner-bird{position:absolute;right:15px;bottom:9px;width:30px;pointer-events:none}.banner-bird img{display:block;width:100%}
-.play-banner h1{font-size:clamp(27px,4.5vw,36px);letter-spacing:-.04em;line-height:1.1;margin:4px 0 8px}
+.play-banner h1{font-size:clamp(23px,3.5vw,29px);letter-spacing:-.04em;line-height:1.1;margin:4px 0 8px}
 .play-banner .eyebrow{color:#d3f867;font-size:10px}
 .play-banner p{font-size:13px;color:#e2edff;margin:0;line-height:1.5}
-.play-banner .sports-artwork{width:175px;margin:-20px -12px -22px 8px}
+.play-banner .sports-artwork{width:125px;margin:-14px -10px -16px 8px}
 .player-dashboard{padding-top:14px;background:transparent}
 body:has(.player-dashboard),body:has(.player-welcome),body:has(.registration-entry),body:has(.community-hero){background:radial-gradient(ellipse at top right,#d2e7ff,transparent 65%),#eef3fc}
 .player-dashboard .card{box-shadow:0 6px 20px #0b315f0d;border:1px solid #d6e1f2;border-radius:18px;margin-top:14px}
@@ -126,12 +126,12 @@ body:has(.community-hero) .feature:nth-child(4){border-color:#118155;background:
 @media(hover:hover){.play-type:hover,.sport-choice:hover{transform:translateY(-2px);box-shadow:0 10px 20px #10336828}.player-navigation>button:hover{border-color:var(--tab)}}
 @media(max-width:600px){
  .player-dashboard{padding:12px 14px 40px}
- .play-banner{min-height:116px;padding:16px;border-radius:16px}
+ .play-banner{min-height:86px;padding:12px;border-radius:16px}
  .play-banner .eyebrow{font-size:8px;letter-spacing:.08em}
  .banner-bird{position:absolute;right:15px;bottom:9px;width:30px;pointer-events:none}.banner-bird img{display:block;width:100%}
-.play-banner h1{font-size:28px}
+.play-banner h1{font-size:24px}
  .play-banner p{font-size:11px}
- .play-banner .sports-artwork{width:132px;margin:-14px -13px -14px 2px}
+ .play-banner .sports-artwork{width:100px;margin:-10px -10px -10px 2px}
  .player-dashboard .player-navigation{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;padding:7px}
  .player-navigation>button{font-size:11px;padding:10px 5px;line-height:1.4;min-width:0;min-height:46px}
  .player-navigation>button:nth-child(4):nth-last-child(3){grid-column:span 2}
