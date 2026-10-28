@@ -156,3 +156,32 @@ body:has(.community-hero) .feature:nth-child(4){border-color:#118155;background:
 .play-banner h1{font-size:25px}.sport-choice{font-size:11px}}
 @media(prefers-reduced-motion:no-preference){.play-banner .art-shuttle{animation:shuttle-float 4s ease-in-out infinite}@keyframes shuttle-float{50%{transform:translate(65px,34px) rotate(-22deg)}}}
 @media(prefers-reduced-motion:reduce){.play-type,.sport-choice{transition:none}.play-type:hover,.sport-choice:hover{transform:none}}
+
+
+/* Compact, consistent player dashboard navigation — issue #29 */
+.player-dashboard .player-navigation{
+ display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;
+ gap:8px!important;padding:10px!important;margin:10px 0 0!important;
+ border-radius:18px!important;background:#fff!important;align-items:stretch;
+}
+.player-dashboard .player-navigation>button{
+ grid-column:auto!important;flex:none!important;min-width:0!important;
+ min-height:76px!important;padding:10px 4px!important;
+ background:#fff!important;color:#17437f!important;
+ border:1px solid #dbe4f0!important;border-radius:13px!important;
+ font-size:clamp(10px,2.65vw,13px)!important;font-weight:700!important;
+ line-height:1.25!important;box-shadow:0 2px 7px #123c7209!important;
+ display:flex!important;align-items:center;justify-content:center;text-align:center;
+ overflow-wrap:anywhere;
+}
+.player-dashboard .player-navigation>button.active{
+ background:#174ba8!important;color:#fff!important;
+ border-color:#174ba8!important;box-shadow:0 3px 9px #174ba82a!important;
+}
+.player-dashboard .player-navigation>button:hover:not(.active){background:#f4f8ff!important;border-color:#a8c2eb!important}
+.player-dashboard .player-navigation>.more-player-options{
+ grid-column:1/-1!important;width:100%!important;margin:0!important;
+}
+.player-dashboard .more-player-options summary{min-height:34px;padding:8px;font-size:13px}
+.player-dashboard .player-navigation .extra-player-options button{min-height:44px}
+@media(max-width:380px){.player-dashboard .player-navigation{gap:6px!important;padding:8px!important}.player-dashboard .player-navigation>button{min-height:70px!important;padding:8px 3px!important}}
