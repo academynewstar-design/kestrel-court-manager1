@@ -10,7 +10,25 @@ const label=(a:Activity)=>`${a.session_date} · ${a.start_time.slice(0,5)}–${a
 
 export function useConvenorAccess(userId:string){
  const[allowed,setAllowed]=useState(false);
- useEffect(()=>{let active=true;setAllowed(false);supabase.rpc('get_my_convenor_locations').then(({data,error})=>{if(active)setAllowed(!error&&!!data?.length)});return()=>{active=false}},[userId]);
+ useEffect(()=>{
+  let active=true;
+  let request=0;
+  const refresh=async()=>{
+   const current=++request;
+   if(!userId){if(active)setAllowed(false);return}
+   const {data,error}=await supabase.rpc('get_my_convenor_locations');
+   if(active&&current===request)setAllowed(!error&&!!data?.length);
+  };
+  setAllowed(false);
+  void refresh();
+  const {data:{subscription}}=supabase.auth.onAuthStateChange(()=>{
+   // Defer the RPC until auth state has settled, avoiding stale-token checks.
+   queueMicrotask(()=>{if(active)void refresh()});
+  });
+  const onFocus=()=>{void refresh()};
+  window.addEventListener('focus',onFocus);
+  return()=>{active=false;request++;subscription.unsubscribe();window.removeEventListener('focus',onFocus)};
+ },[userId]);
  return allowed;
 }
 
