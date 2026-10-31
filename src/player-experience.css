@@ -290,3 +290,23 @@ body:has(.community-hero) .feature:nth-child(4){border-color:#118155;background:
   margin-bottom:9px!important;
  }
 }
+
+/* Compact mobile city/location selection, without oversized blue step banner. */
+@media(max-width:650px){
+ .player-dashboard .game-picker{padding:12px!important;margin-top:10px!important}
+ .player-dashboard .game-picker .picker-navigation{margin:0 0 8px!important;gap:8px!important}
+ .player-dashboard .picker-navigation button{min-height:32px!important;padding:6px 10px!important;font-size:12px!important}
+ .player-dashboard .game-picker .picker-heading.colourful{
+  padding:12px 14px!important;min-height:0!important;margin:0 0 10px!important;
+  border-radius:14px!important;
+ }
+ .player-dashboard .game-picker .picker-heading.colourful h2{
+  font-size:22px!important;line-height:1.15!important;margin:4px 0 6px!important;
+ }
+ .player-dashboard .game-picker .picker-heading.colourful .eyebrow{font-size:10px!important;margin:0!important}
+ .player-dashboard .game-picker .picker-selection{margin:4px 0 8px!important;padding:6px 9px!important;font-size:12px!important}
+ .player-dashboard .game-picker .picker-progress{margin:6px 0 0!important;gap:6px!important}
+ .player-dashboard .picker-choices{gap:8px!important}
+ .player-dashboard .picker-choices button{min-height:54px!important;padding:9px!important;font-size:13px!important;border-radius:12px!important}
+ .player-dashboard .picker-place-icon{width:30px!important;height:30px!important;font-size:15px!important}
+}
