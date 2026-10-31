@@ -227,3 +227,32 @@ body:has(.community-hero) .feature:nth-child(4){border-color:#118155;background:
  .player-dashboard .sport-icon{font-size:27px!important}
  .player-dashboard .upcoming-games.card{margin-top:10px!important}
 }
+
+/* Remove the oversized white navigation panel on mobile. */
+@media(max-width:650px){
+ .player-dashboard nav.player-navigation{
+  background:transparent!important;border:0!important;box-shadow:none!important;
+  padding:0!important;gap:8px!important;margin:10px 0 0!important;
+  align-content:start!important;align-items:start!important;
+  grid-auto-rows:min-content!important;
+ }
+ .player-dashboard nav.player-navigation>button{
+  min-height:58px!important;height:auto!important;padding:9px 7px!important;
+  margin:0!important;align-self:stretch!important;
+ }
+ .player-dashboard nav.player-navigation>details.more-player-options{
+  grid-column:1/-1!important;display:block!important;
+  background:transparent!important;border:0!important;box-shadow:none!important;
+  padding:0!important;margin:0!important;min-height:0!important;height:auto!important;
+  align-self:start!important;
+ }
+ .player-dashboard nav.player-navigation>details.more-player-options>summary{
+  display:block!important;min-height:0!important;margin:0!important;
+  padding:7px 8px!important;line-height:1.25!important;
+  background:transparent!important;
+ }
+ .player-dashboard nav.player-navigation>details.more-player-options:not([open]) .extra-player-options,
+ .player-dashboard nav.player-navigation>details.more-player-options:not([open]) .animation-option{
+  display:none!important;
+ }
+}
