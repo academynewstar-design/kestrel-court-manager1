@@ -133,3 +133,62 @@ body{background:linear-gradient(180deg,#eef4fb 0,#f8fafc 320px)}
 .compact-roster-table .compact-roster-actions{display:flex;flex-wrap:wrap;gap:5px;align-items:center}
 .compact-roster-table .compact-roster-actions button:disabled{opacity:.45;cursor:not-allowed}
 @media(max-width:650px){.compact-roster-table{min-width:590px}.compact-roster-table td:first-child{min-width:145px}.compact-roster-table th,.compact-roster-table td{padding:7px 6px}.compact-roster-scroll{margin-left:0;margin-right:0}}
+
+
+/* Mobile player dashboard refresh: balanced quick actions and less scrolling. */
+@media (max-width: 650px) {
+  .player-navigation {
+    display:grid !important;
+    grid-template-columns:repeat(2,minmax(0,1fr)) !important;
+    gap:10px !important;
+    padding:12px !important;
+    border-radius:22px !important;
+    background:#fff !important;
+    box-shadow:0 6px 24px rgba(15,43,83,.07);
+    align-items:stretch;
+  }
+  .player-navigation > button {
+    width:100% !important;
+    min-width:0 !important;
+    min-height:76px !important;
+    padding:12px 8px !important;
+    margin:0 !important;
+    border:1px solid #e0e8f2 !important;
+    border-radius:17px !important;
+    background:#f3f7fd !important;
+    color:#173963 !important;
+    font-size:13px !important;
+    font-weight:750 !important;
+    line-height:1.35 !important;
+    box-shadow:0 3px 9px rgba(20,50,90,.04);
+    white-space:normal !important;
+  }
+  .player-navigation > button.active {
+    background:linear-gradient(145deg,#1b56b6,#16428f) !important;
+    color:#fff !important;
+    border-color:#2055a8 !important;
+    box-shadow:0 5px 13px rgba(25,82,165,.2);
+  }
+  .player-navigation > .more-player-options {
+    grid-column:1 / -1;
+    min-width:0;
+    margin:0 !important;
+  }
+  .player-navigation > details.more-player-options {
+    grid-column:1 / -1;
+    margin:0 !important;
+    padding:4px 0 0 !important;
+    text-align:center;
+  }
+  .player-navigation > details.more-player-options > summary {
+    padding:10px 12px;
+    border-radius:12px;
+    color:#244a79;
+    font-weight:700;
+    cursor:pointer;
+  }
+  .upcoming-games.card {padding:12px 14px;border-radius:18px}
+  .upcoming-games summary {display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:5px}
+  .upcoming-games summary span {margin-left:0}
+  .player-dashboard .community-hero,.player-dashboard .hero {padding:16px !important}
+}
