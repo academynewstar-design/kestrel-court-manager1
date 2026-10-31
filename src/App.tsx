@@ -191,7 +191,7 @@ function LocationDirections(){
  useEffect(()=>{supabase.from('locations').select('id,name,address,city,directions_instructions').order('name').then(({data,error}:any)=>{if(error)setMsg(error.message);else setLocations(data||[])})},[]);
  const mapUrl=(l:any)=>'https://www.google.com/maps/dir/?api=1&destination='+encodeURIComponent([l.address,l.city,'Ontario'].filter(Boolean).join(', '));
  return <section className="card"><h2>📍 Directions &amp; Instructions</h2><details><summary>Volleyball WhatsApp groups</summary><SportWhatsAppGroups directory/></details><p className="muted">Tap Get Directions to open Google Maps for your route, travel time and distance. Read your location's arrival instructions before your session.</p>{msg&&<p className="error">{msg}</p>}{locations.map((l:any)=>{
- const instructions=String(l.directions_instructions||'');
+ const instructions=String(l.directions_instructions|| (l.id===18?'Dome – Field 2':''));
  const groupUrl=instructions.match(/https:\/\/chat\.whatsapp\.com\/[A-Za-z0-9]+(?:\?[^\s]*)?/)?.[0];
  const arrivalText=groupUrl?instructions.replace(groupUrl,'').trim():instructions;
  return <div className="session" key={l.id}><div><strong>{l.name}</strong><div>{[l.address,l.city].filter(Boolean).join(' · ')||'Address to be added'}</div>{arrivalText&&<div className="notice"><strong>🚪 Arrival instructions</strong><p style={{whiteSpace:'pre-line'}}>{arrivalText}</p></div>}</div><div className="rowactions"><a className="button" href={mapUrl(l)} target="_blank" rel="noreferrer">Get Directions</a>{groupUrl&&<a className="button" href={groupUrl} target="_blank" rel="noopener noreferrer">Join WhatsApp Group</a>}</div></div>
