@@ -185,3 +185,30 @@ body:has(.community-hero) .feature:nth-child(4){border-color:#118155;background:
 .player-dashboard .more-player-options summary{min-height:34px;padding:8px;font-size:13px}
 .player-dashboard .player-navigation .extra-player-options button{min-height:44px}
 @media(max-width:380px){.player-dashboard .player-navigation{gap:6px!important;padding:8px!important}.player-dashboard .player-navigation>button{min-height:70px!important;padding:8px 3px!important}}
+
+/* Final mobile dashboard navigation override: four balanced quick actions. */
+@media(max-width:650px){
+ .player-dashboard .player-navigation{
+  display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  gap:10px!important;padding:12px!important;margin:10px 0 0!important;
+  border-radius:20px!important;
+ }
+ .player-dashboard .player-navigation>button{
+  grid-column:auto!important;min-height:72px!important;padding:11px 8px!important;
+  border-radius:16px!important;background:#f2f7ff!important;
+  color:#173963!important;border:1px solid #dce7f5!important;
+  font-size:13px!important;line-height:1.3!important;
+  box-shadow:0 3px 10px #123c720c!important;
+ }
+ .player-dashboard .player-navigation>button.active{
+  background:linear-gradient(145deg,#2162c7,#174493)!important;
+  color:#fff!important;border-color:#2162c7!important;
+  box-shadow:0 5px 14px #174ba82c!important;
+ }
+ .player-dashboard .player-navigation>.more-player-options{
+  grid-column:1/-1!important;
+ }
+ .player-dashboard .play-banner{padding:14px 18px!important;min-height:0!important}
+ .player-dashboard .play-banner h1{font-size:clamp(23px,5vw,30px)!important;margin:5px 0!important}
+ .player-dashboard .upcoming-games.card{padding:12px 14px!important}
+}
