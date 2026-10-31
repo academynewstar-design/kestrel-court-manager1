@@ -23,7 +23,7 @@ export default function GamePicker({selection,sports,cities,locations,onChange,c
   if(previousStep.current===step)return;
   previousStep.current=step;
   heading.current?.focus({preventScroll:true});
-  heading.current?.closest('.game-picker')?.scrollIntoView({block:'start',behavior:'instant'});
+  // Do not force the page to scroll: keep the site header and sign-out accessible.
  },[step]);
  function home(){onChange({sport:'',city:'',location:''})}
  function back(){
