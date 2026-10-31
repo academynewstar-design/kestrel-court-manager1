@@ -351,12 +351,13 @@ function AdminPermanentRequests(){const[rows,setRows]=useState<any[]>([]);const[
  const selected=schedules.find((s:any)=>String(s.id)===schedule);
  const badminton=selected?.sports?.name?.toLowerCase()==='badminton';
  const maxCourts=/jeunes sans fronti|ga[eé]tan.gervais|david saint.jacques/i.test(locations.find((l:any)=>String(l.id)===school)?.name||'')?6:3;
+ const permanentCourtLimit=/credit valley/i.test(locations.find((l:any)=>String(l.id)===school)?.name||'')?7:5;
  const courtOptions=Array.from({length:maxCourts},(_,i)=>'Court '+(i+1));
  const named=(id:any)=>{const p=players.find((x:any)=>String(x.id)===String(id));return p?.full_name||p?.email||'Player'};
  const eligiblePlayers=players.filter((p:any)=>!rows.some((r:any)=>String(r.user_id)===String(p.id)));
  async function addPermanent(){
   if(!schedule||!addUser||busy)return;
-  if(badminton&&rows.filter((r:any)=>(draft[String(r.id)]?.court||r.court||'Court 1')===addCourt).length>=5){setMsg('Selected court already has 5 permanent players.');return}
+  if(badminton&&rows.filter((r:any)=>(draft[String(r.id)]?.court||r.court||'Court 1')===addCourt).length>=permanentCourtLimit){setMsg('Selected court already has '+permanentCourtLimit+' permanent players.');return}
   setBusy(true);setMsg('Adding player permanently…');
   try{
    const {error}=await supabase.rpc('admin_set_permanent_choices',{p_user_id:addUser,p_choices:[{recurring_schedule_id:Number(schedule),court:badminton?addCourt:null}]});
@@ -393,7 +394,7 @@ function AdminPermanentRequests(){const[rows,setRows]=useState<any[]>([]);const[
   if(!schedule||busy)return;
   const changed=rows.filter((r:any)=>draft[String(r.id)]&&(draft[String(r.id)].court!==(r.court||'Court 1')||draft[String(r.id)].level!==(r.player_level||'Intermediate')));
   if(!changed.length){setMsg('No changes to save.');return}
-  if(badminton){const counts:Record<string,number>={};rows.forEach((r:any)=>{const c=draft[String(r.id)]?.court||r.court||'Court 1';counts[c]=(counts[c]||0)+1});const previousCounts:Record<string,number>={};rows.forEach((r:any)=>{const c=r.court||'Court 1';previousCounts[c]=(previousCounts[c]||0)+1});if(Object.entries(counts).some(([court,count])=>count>5&&count>(previousCounts[court]||0))){setMsg('A court cannot exceed 5 permanent players. Move players out of overcrowded courts first.');return}}
+  if(badminton){const counts:Record<string,number>={};rows.forEach((r:any)=>{const c=draft[String(r.id)]?.court||r.court||'Court 1';counts[c]=(counts[c]||0)+1});const previousCounts:Record<string,number>={};rows.forEach((r:any)=>{const c=r.court||'Court 1';previousCounts[c]=(previousCounts[c]||0)+1});if(Object.entries(counts).some(([court,count])=>count>permanentCourtLimit&&count>(previousCounts[court]||0))){setMsg('A court cannot exceed '+permanentCourtLimit+' permanent players. Move players out of overcrowded courts first.');return}}
   setBusy(true);setMsg('Saving permanent assignments…');
   try{
    for(const r of changed){
