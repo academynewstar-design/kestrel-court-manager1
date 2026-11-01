@@ -350,7 +350,8 @@ function AdminPermanentRequests(){const[rows,setRows]=useState<any[]>([]);const[
  })();return()=>{active=false}},[schedule]);
  const selected=schedules.find((s:any)=>String(s.id)===schedule);
  const badminton=selected?.sports?.name?.toLowerCase()==='badminton';
- const maxCourts=/jeunes sans fronti|ga[eé]tan.gervais|david saint.jacques/i.test(locations.find((l:any)=>String(l.id)===school)?.name||'')?6:3;
+ const venueName=(locations.find((l:any)=>String(l.id)===school)?.name||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
+ const maxCourts=/jeunes\s+sans\s+frontieres|gaetan\s+gervais|david\s+saint[\s-]*jacques/.test(venueName)?6:3;
  const permanentCourtLimit=/credit valley/i.test(locations.find((l:any)=>String(l.id)===school)?.name||'')?7:5;
  const courtOptions=Array.from({length:maxCourts},(_,i)=>'Court '+(i+1));
  const named=(id:any)=>{const p=players.find((x:any)=>String(x.id)===String(id));return p?.full_name||p?.email||'Player'};
