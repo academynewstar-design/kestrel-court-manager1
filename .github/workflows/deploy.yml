@@ -43,3 +43,5 @@ jobs:
 # Redeploy permanent court assignment interface 2026-10-25.
 
 # Redeploy court assignment immediate-save fix fe55ef4; production verification required.
+
+# Redeploy six-court Jeunes sans Frontieres assignment selector (5dcf987).
