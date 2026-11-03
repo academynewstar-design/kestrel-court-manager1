@@ -192,3 +192,19 @@ body{background:linear-gradient(180deg,#eef4fb 0,#f8fafc 320px)}
   .upcoming-games summary span {margin-left:0}
   .player-dashboard .community-hero,.player-dashboard .hero {padding:16px !important}
 }
+
+/* Player mobile layout correction: overrides legacy two-column and full-width buttons */
+@media(max-width:650px){
+ .player-dashboard nav.player-navigation{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:6px!important;padding:7px!important;margin:8px 0!important;border-radius:14px!important}
+ .player-dashboard nav.player-navigation>button{min-height:54px!important;padding:7px 3px!important;font-size:11px!important;line-height:1.15!important;border-radius:10px!important}
+ .player-dashboard nav.player-navigation>.player-secondary-options{grid-column:1/-1!important;padding:0!important;margin:0!important}
+ .player-dashboard nav.player-navigation>.player-secondary-options>summary{padding:6px!important;font-size:13px!important}
+ .player-dashboard nav.player-navigation .player-secondary-grid,.player-dashboard nav.player-navigation .extra-player-options{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+ .player-dashboard .session{padding:8px 0!important;gap:6px!important}
+ .player-dashboard .session .rowactions{width:100%!important;display:flex!important;justify-content:flex-end!important;flex:0 0 auto!important}
+ .player-dashboard .session .rowactions button.attendance-vote{width:124px!important;flex:0 0 124px!important;min-height:54px!important;padding:5px!important;font-size:13px!important}
+ .player-dashboard .session .rowactions button.attendance-vote .vote-caption{font-size:10px!important}
+ .player-dashboard .card:has(>h2:first-child) {padding:16px!important}
+ .player-dashboard .card>h2{margin:0 0 12px!important;font-size:23px!important}
+ .player-dashboard .community-hero,.player-dashboard .hero{padding:10px 14px!important}
+}
