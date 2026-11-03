@@ -1,4 +1,4 @@
-const groups=[{sport:'volleyball',city:'Mississauga',url:'https://chat.whatsapp.com/CAjGbTJIE5cKQ7G5Dsj9Jt?s=cl&p=a&mlu=4&ilr=4'},{sport:'volleyball',city:'London',url:'https://chat.whatsapp.com/FM6WunzeEADBLT4EACrh1m?s=cl&p=a&mlu=4&ilr=4'}];
+const groups=[{sport:'volleyball',city:'Mississauga',url:'https://chat.whatsapp.com/CAjGbTJIE5cKQ7G5Dsj9Jt?s=cl&p=a&mlu=4&ilr=4'},{sport:'volleyball',city:'London',url:'https://chat.whatsapp.com/FM6WunzeEADBLT4EACrh1m?s=cl&p=a&mlu=4&ilr=4'},{sport:'volleyball',city:'Niagara Falls',url:'https://chat.whatsapp.com/GBcGbvIW0Cb6CkslLXPQg3?s=cl&p=a&iam=2'}];
 const normalized=(value?:string)=>String(value||'').trim().toLowerCase();
 export default function SportWhatsAppGroups({sessions,sport,city,directory=false}:{sessions?:any[];sport?:string;city?:string;directory?:boolean}){
  const visible=groups.filter(g=>directory||sessions?.some(s=>normalized(s.sports?.name)===g.sport&&normalized(s.locations?.city)===normalized(g.city))||normalized(sport)===g.sport&&normalized(city)===normalized(g.city));
