@@ -7,19 +7,8 @@ import {DropinApprovalGate,AdminDropinAccountApprovals,useDropinAccountApproval}
 afterEach(cleanup);beforeEach(()=>from.mockReset());
 const approval=(status:string)=>({status,error:'',approved:status==='approved',refresh:vi.fn().mockResolvedValue(undefined)});
 describe('Drop-in account approval',()=>{
- it.each(['loading','none','pending','rejected','error'])('blocks booking controls while %s',status=>{
-  render(<DropinApprovalGate userId="player" approval={approval(status)}><button>Join Waitlist</button></DropinApprovalGate>);
-  expect(screen.queryByRole('button',{name:'Join Waitlist'})).toBeNull();
- });
- it('only requests pending access and refreshes the decision',async()=>{
-  const insert=vi.fn().mockResolvedValue({error:null});from.mockReturnValue({insert});const state=approval('none');
-  render(<DropinApprovalGate userId="player" approval={state}><button>Going</button></DropinApprovalGate>);
-  fireEvent.click(screen.getByRole('button',{name:'Request Admin approval'}));
-  await waitFor(()=>expect(insert).toHaveBeenCalledWith({user_id:'player'}));
-  expect(state.refresh).toHaveBeenCalled();expect(screen.queryByRole('button',{name:'Going'})).toBeNull();
- });
- it('reveals game controls after approval',()=>{
-  render(<DropinApprovalGate userId="player" approval={approval('approved')}><button>Going</button></DropinApprovalGate>);
+ it.each(['loading','none','pending','rejected','error','approved'])('allows booking controls without first-time approval when %s',status=>{
+  render(<DropinApprovalGate userId="player" approval={approval(status)}><button>Going</button></DropinApprovalGate>);
   expect(screen.getByRole('button',{name:'Going'})).toBeTruthy();
  });
  it('shows name and email and saves the admin decision',async()=>{
@@ -32,9 +21,9 @@ describe('Drop-in account approval',()=>{
   await waitFor(()=>expect(update).toHaveBeenCalledWith({status:'approved'}));
   expect(await screen.findByRole('status')).toBeTruthy();
  });
- it('fails closed on a status lookup error',async()=>{
+ it('keeps booking available even when the legacy approval lookup fails',async()=>{
   from.mockReturnValue({select:()=>({eq:()=>({maybeSingle:()=>Promise.resolve({data:null,error:{message:'Connection failed'}})})})});
   function Harness(){const state=useDropinAccountApproval({id:'p',player_type:'dropin',player_type_status:'approved'});return <DropinApprovalGate userId="p" approval={state}><button>Going</button></DropinApprovalGate>}
-  render(<Harness/>);expect(await screen.findByRole('alert')).toBeTruthy();expect(screen.queryByRole('button',{name:'Going'})).toBeNull();
+  render(<Harness/>);expect(screen.getByRole('button',{name:'Going'})).toBeTruthy();
  });
 });
