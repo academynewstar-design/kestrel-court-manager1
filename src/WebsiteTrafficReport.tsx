@@ -4,6 +4,7 @@ import { supabase } from './lib/supabase';
 type TrafficRow = { day: string | null; page_name: string; page_views: number; visits: number; unique_visitors: number; guest_page_views: number };
 export default function WebsiteTrafficReport({start,end,refresh}:{start:string;end:string;refresh:number}) {
  const [rows,setRows]=useState<TrafficRow[]>([]);
+ const [identified,setIdentified]=useState<{visited_at:string;visitor_name:string;visitor_email:string;page_name:string}[]>([]);
  const [error,setError]=useState('');
  const [loading,setLoading]=useState(true);
  useEffect(()=>{
@@ -13,7 +14,7 @@ export default function WebsiteTrafficReport({start,end,refresh}:{start:string;e
    setLoading(true);
    const {data,error}=await supabase.rpc('admin_website_traffic_report',{p_start_date:start,p_end_date:end});
    if(!active)return;
-   setRows((data||[]) as TrafficRow[]);setError(error?.message||'');setLoading(false);
+   setRows((data||[]) as TrafficRow[]);setError(error?.message||'');const people=await supabase.rpc('admin_website_identified_visits',{p_start_date:start,p_end_date:end});if(!active)return;setIdentified(people.data||[]);if(people.error)setError(people.error.message);setLoading(false);
   }
   void load();const timer=setInterval(()=>void load(),60000);
   return()=>{active=false;clearInterval(timer)};
@@ -35,6 +36,6 @@ export default function WebsiteTrafficReport({start,end,refresh}:{start:string;e
    <p><strong>{Number(total?.unique_visitors||0).toLocaleString()}</strong> unique visitors</p>
    <p><strong>{Number(total?.guest_page_views||0).toLocaleString()}</strong> anonymous page views</p>
   </div><div style={{overflowX:'auto'}}><table><thead><tr><th>Date</th><th>Page</th><th>Views</th><th>Visits</th><th>Unique</th><th>Guest views</th></tr></thead><tbody>{details.map((r,i)=><tr key={i}><td>{r.day}</td><td>{r.page_name}</td><td>{r.page_views}</td><td>{r.visits}</td><td>{r.unique_visitors}</td><td>{r.guest_page_views}</td></tr>)}</tbody></table></div>
-  {!details.length&&<p className="muted">No tracked visits for these dates.</p>}</>}
+  {!details.length&&<p className="muted">No tracked visits for these dates.</p>}<h4>Signed-in visitor activity</h4><p className="muted">Names are available only when visitors are signed in. Anonymous visits cannot be attributed to a player.</p><div style={{overflowX:'auto'}}><table><thead><tr><th>Visited (Toronto)</th><th>Name</th><th>Email</th><th>Page</th></tr></thead><tbody>{identified.map((r,i)=><tr key={i}><td>{new Date(r.visited_at).toLocaleString('en-CA',{timeZone:'America/Toronto'})}</td><td>{r.visitor_name||'—'}</td><td>{r.visitor_email||'—'}</td><td>{r.page_name}</td></tr>)}</tbody></table></div>{!identified.length&&<p className="muted">No signed-in visits recorded in this date range.</p>}</>}
  </section>;
 }
