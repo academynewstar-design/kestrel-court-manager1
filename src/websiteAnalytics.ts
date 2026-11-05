@@ -19,14 +19,29 @@ export function startWebsiteAnalytics() {
   let visitorId: string, sessionId: string;
   try { visitorId = getId(localStorage, VISITOR_KEY); sessionId = getId(sessionStorage, SESSION_KEY); }
   catch { return; }
-  let lastPage = '';
-  const track = () => {
+  let lastKey = '';
+  let lastSent = 0;
+  let authenticated = false;
+  const track = async (force = false) => {
     const page = pageName();
-    if (page === lastPage) return;
-    lastPage = page;
-    void supabase.rpc('record_website_page_view', { p_visitor_id: visitorId, p_session_id: sessionId, p_page_name: page });
+    const key = page + ':' + authenticated;
+    if (!force && key === lastKey && Date.now() - lastSent < 60000) return;
+    const { error } = await supabase.rpc('record_website_page_view', {
+      p_visitor_id: visitorId, p_session_id: sessionId, p_page_name: page
+    });
+    if (!error) { lastKey = key; lastSent = Date.now(); }
+    else console.warn('Kestrel visitor analytics unavailable:', error.message);
   };
-  track();
-  window.addEventListener('hashchange', track);
-  window.addEventListener('popstate', track);
+  void supabase.auth.getUser().then(({data}) => {
+    authenticated = !!data.user;
+    void track(true);
+  });
+  supabase.auth.onAuthStateChange((_event, session) => {
+    const next = !!session?.user;
+    if (next !== authenticated) { authenticated = next; void track(true); }
+  });
+  window.addEventListener('hashchange', () => void track());
+  window.addEventListener('popstate', () => void track());
+  window.addEventListener('pageshow', () => void track());
+  window.addEventListener('focus', () => void track());
 }
