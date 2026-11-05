@@ -10,7 +10,7 @@ function getId(store: Storage, key: string) {
 }
 function pageName() {
   // Never send URL hashes or query strings: auth tokens may be present there.
-  const route = location.hash.replace(/^#\/?/, '').split(/[?&]/)[0];
+  const route = /(?:access_token|refresh_token|id_token|code)=/i.test(location.hash) ? '' : location.hash.replace(/^#\/?/, '').split(/[?&]/)[0];
   const safe = route.replace(/[^a-zA-Z0-9 _/-]/g, '').slice(0, 80);
   return safe || 'Home';
 }
