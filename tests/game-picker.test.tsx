@@ -26,7 +26,7 @@ describe('Drop-in game selection',()=>{
   expect(screen.getByRole('heading',{name:'Available sessions'})).toBe(document.activeElement);
   expect(screen.getByText('Sessions for volleyball in Toronto at College Français')).toBeTruthy();
   expect(screen.getByRole('button',{name:'Going'})).toBeTruthy();
-  expect(Element.prototype.scrollIntoView).toHaveBeenCalledTimes(3);
+  expect(Element.prototype.scrollIntoView).not.toHaveBeenCalled();
  });
  it('lets players go back, choose a different city, and return to all sports',async()=>{
   const user=userEvent.setup();render(<Flow/>);
