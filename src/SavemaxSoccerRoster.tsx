@@ -1,7 +1,7 @@
 import {useEffect,useState} from 'react';
 import {supabase} from './lib/supabase';
 
-type Game={id:string;session_date:string;start_time:string;end_time:string;capacity:number|null;locations:{name:string;city:string}|null;sports:{name:string}|null};
+type Game={id:string;session_date:string;start_time:string;end_time:string;capacity:number|null;status:string;dropin_enabled:boolean;locations:{name:string;city:string}|null;sports:{name:string}|null};
 type Player={player_name:string;is_me:boolean;party_size:number};
 export default function SavemaxSoccerRoster(){
  const [games,setGames]=useState<Game[]>([]);
@@ -10,13 +10,13 @@ export default function SavemaxSoccerRoster(){
  const [error,setError]=useState('');
  const [loading,setLoading]=useState(true);
  useEffect(()=>{let active=true;(async()=>{
-  const {data,error}=await supabase.from('sessions').select('id,session_date,start_time,end_time,capacity,locations(name,city),sports(name)').order('session_date',{ascending:false}).limit(1500);
+  const {data,error}=await supabase.from('sessions').select('id,session_date,start_time,end_time,capacity,status,dropin_enabled,locations(name,city),sports(name)').eq('sport_id',4).eq('location_id',18).eq('status','open').eq('dropin_enabled',true).gt('capacity',0).gte('session_date',new Intl.DateTimeFormat('en-CA',{timeZone:'America/Toronto',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date())).lte('session_date','2027-03-31').order('session_date',{ascending:true}).limit(100);
   if(!active)return;
   if(error){setError(error.message);setLoading(false);return}
   const normalized:Game[]=(data||[]).map(s=>({...s,locations:Array.isArray(s.locations)?s.locations[0]??null:s.locations,sports:Array.isArray(s.sports)?s.sports[0]??null:s.sports}));
-  const matching=normalized.filter(s=>s.sports?.name?.toLowerCase()==='soccer'&&/savemax|save max/i.test(s.locations?.name||''));
+  const matching=normalized.filter(s=>s.sports?.name?.toLowerCase()==='soccer'&&/savemax|save max/i.test(s.locations?.name||'')&&s.status==='open'&&s.dropin_enabled&&Number(s.capacity)>0).sort((a,b)=>a.session_date.localeCompare(b.session_date));
   setGames(matching);
-  setSelected(prev=>prev||matching.find((s:any)=>s.session_date>=new Intl.DateTimeFormat('en-CA',{timeZone:'America/Toronto',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date()))?.id||matching[0]?.id||'');
+  setSelected(prev=>matching.some(g=>g.id===prev)?prev:matching[0]?.id||'');
   setLoading(false);
  })();return()=>{active=false}},[]);
  useEffect(()=>{if(!selected)return;let active=true;setLoading(true);setError('');supabase.rpc('get_grouped_dropin_roster',{p_session_id:selected}).then(({data,error}:any)=>{if(!active)return;setPlayers(data||[]);setError(error?.message||'');setLoading(false)});return()=>{active=false}},[selected]);
