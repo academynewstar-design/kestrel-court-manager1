@@ -1,0 +1,42 @@
+import {useEffect,useRef,useState} from 'react';
+import {supabase} from './lib/supabase';
+
+type Song={id:number;title:string;lyrics_hindi:string;lyrics_latin:string};
+type Item={id:number;position:number;song_id:number;bhakti_songs:Song};
+export function useBhaktiAccess(userId:string){
+ const [allowed,setAllowed]=useState(false);
+ useEffect(()=>{let live=true;supabase.from('bhakti_members').select('user_id').eq('user_id',userId).maybeSingle().then(({data})=>{if(live)setAllowed(!!data)});return()=>{live=false}},[userId]);
+ return allowed;
+}
+export function BhaktiAccessAdmin(){
+ const[email,setEmail]=useState('');const[msg,setMsg]=useState('');const[busy,setBusy]=useState(false);
+ const[members,setMembers]=useState<any[]>([]);
+ async function refresh(){const{data}=await supabase.from('bhakti_members').select('user_id,created_at');setMembers(data||[])}
+ useEffect(()=>{refresh()},[]);
+ async function change(grant:boolean,target=email){if(!target.trim())return;setBusy(true);const{data,error}=await supabase.rpc('bhakti_grant_by_email',{p_email:target.trim(),p_grant:grant});setMsg(error?.message||data||'Saved');setBusy(false);if(!error){setEmail('');refresh()}}
+ return <section className="card"><h2>🔐 Bhakti Sangam — Manage Access</h2><p>Only registered users whose email is approved can see Bhakti Sangam. Admins always have access.</p><label>Registered user email<input type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="member@example.com"/></label><div style={{display:'flex',gap:8,flexWrap:'wrap'}}><button disabled={busy||!email.trim()} onClick={()=>change(true)}>Grant access</button><button className="outline" disabled={busy||!email.trim()} onClick={()=>change(false)}>Revoke access</button></div>{msg&&<p role="status">{msg}</p>}<p className="muted">{members.length} authorized member(s). To revoke access, enter the registered email above.</p></section>
+}
+export default function BhaktiSangam(){
+ const[mode,setMode]=useState<'view'|'play'|'add'|'remove'>('view');
+ const[items,setItems]=useState<Item[]>([]);const[songs,setSongs]=useState<Song[]>([]);
+ const[expanded,setExpanded]=useState<number[]>([]);
+ const[script,setScript]=useState<'hindi'|'latin'>('latin');
+ const[speed,setSpeed]=useState(2);const[playing,setPlaying]=useState(false);
+ const[title,setTitle]=useState('');const[hindi,setHindi]=useState('');const[latin,setLatin]=useState('');
+ const[chosen,setChosen]=useState('');const[msg,setMsg]=useState('');
+ const viewer=useRef<HTMLDivElement>(null);
+ async function refresh(){const [a,b]=await Promise.all([supabase.from('bhakti_program_items').select('id,position,song_id,bhakti_songs(id,title,lyrics_hindi,lyrics_latin)').order('position'),supabase.from('bhakti_songs').select('*').order('title')]);if(a.error)setMsg(a.error.message);else setItems((a.data||[]) as unknown as Item[]);if(b.error)setMsg(b.error.message);else setSongs((b.data||[]) as Song[])}
+ useEffect(()=>{refresh()},[]);
+ useEffect(()=>{if(!playing||mode!=='play')return;let frame=0,last=0;function tick(t:number){if(!last)last=t;const el=viewer.current;if(el){el.scrollTop+=(t-last)*speed*0.014;if(el.scrollTop+el.clientHeight>=el.scrollHeight-2){setPlaying(false);return}}last=t;frame=requestAnimationFrame(tick)}frame=requestAnimationFrame(tick);return()=>cancelAnimationFrame(frame)},[playing,speed,mode]);
+ async function addSong(){if(!title.trim())return;const{data,error}=await supabase.from('bhakti_songs').insert({title:title.trim(),lyrics_hindi:hindi,lyrics_latin:latin}).select('id').single();if(error){setMsg(error.message);return}const{error:err}=await supabase.from('bhakti_program_items').insert({song_id:data.id,position:items.length+1});setMsg(err?.message||'Bhajan added');setTitle('');setHindi('');setLatin('');refresh()}
+ async function addExisting(){if(!chosen)return;const{error}=await supabase.from('bhakti_program_items').insert({song_id:Number(chosen),position:items.length+1});setMsg(error?.message||'Added to program');refresh()}
+ async function remove(id:number){if(!confirm('Remove this item from the program? The lyrics will remain saved.'))return;const{error}=await supabase.from('bhakti_program_items').delete().eq('id',id);setMsg(error?.message||'Removed');refresh()}
+ async function move(index:number,dir:number){const other=items[index+dir];if(!other)return;const current=items[index];const [a,b]=await Promise.all([supabase.from('bhakti_program_items').update({position:other.position}).eq('id',current.id),supabase.from('bhakti_program_items').update({position:current.position}).eq('id',other.id)]);setMsg(a.error?.message||b.error?.message||'Order updated');refresh()}
+ function lines(s:Song){return(script==='hindi'?s.lyrics_hindi:s.lyrics_latin)||'Lyrics not added yet. Choose Add Item to enter the full lyrics.'}
+ return <section className="card"><h2>🪷 Kestrel Bhakti Sangam</h2><div className="tabs" style={{flexWrap:'wrap'}}>{([['view','View Program'],['play','Play Program'],['add','Add Item'],['remove','Remove Item']] as const).map(([k,v])=><button key={k} className={mode===k?'active':''} onClick={()=>{setMode(k);setPlaying(false)}}>{v}</button>)}</div><div className="tabs"><button className={script==='hindi'?'active':''} onClick={()=>setScript('hindi')}>हिन्दी</button><button className={script==='latin'?'active':''} onClick={()=>setScript('latin')}>Latin ABC</button></div>{msg&&<p role="status">{msg}</p>}
+ {mode==='view'&&<><h3>Kirtan Program ({items.length} items)</h3>{items.map((it,i)=><div key={it.id} style={{border:'1px solid #d1d5db',borderRadius:10,marginBottom:8,padding:12}}><button className="outline" style={{width:'100%',textAlign:'left'}} onClick={()=>setExpanded(a=>a.includes(it.id)?a.filter(x=>x!==it.id):[...a,it.id])}>{i+1}. {it.bhakti_songs?.title} {expanded.includes(it.id)?'▲':'▼'}</button>{expanded.includes(it.id)&&<p style={{whiteSpace:'pre-wrap',lineHeight:1.9}}>{lines(it.bhakti_songs)}</p>}</div>)}<button onClick={()=>{setMode('play');setPlaying(true)}}>▶ Play Program</button></>}
+ {mode==='play'&&<><div style={{display:'flex',gap:8,alignItems:'center',flexWrap:'wrap',marginBottom:12}}><button onClick={()=>setPlaying(p=>!p)}>{playing?'⏸ Pause':'▶ Play'}</button><button className="outline" onClick={()=>{setPlaying(false);if(viewer.current)viewer.current.scrollTop=0}}>↺ Restart</button><button className="outline" onClick={()=>setSpeed(s=>Math.max(1,s-1))} aria-label="Slow down">−</button><strong>Speed {speed}</strong><button className="outline" onClick={()=>setSpeed(s=>Math.min(10,s+1))} aria-label="Speed up">+</button><button className="outline" onClick={()=>viewer.current?.requestFullscreen?.()}>⛶ Full screen</button></div><div ref={viewer} style={{height:'65vh',overflowY:'auto',background:'#101827',color:'#fff',borderRadius:12,padding:'32px 20px',textAlign:'center',scrollBehavior:'auto'}}>{items.map((it,i)=><article key={it.id} style={{marginBottom:70}}><h2 style={{color:'#fff'}}>{i+1}. {it.bhakti_songs?.title}</h2><div style={{whiteSpace:'pre-wrap',fontSize:'clamp(23px,4vw,36px)',lineHeight:2.1}}>{lines(it.bhakti_songs)}</div></article>)}</div></>}
+ {mode==='add'&&<><h3>Add a new bhajan and its lyrics</h3><label>Title<input value={title} onChange={e=>setTitle(e.target.value)}/></label><label>Hindi (Devanagari) lyrics<textarea rows={6} value={hindi} onChange={e=>setHindi(e.target.value)}/></label><label>Latin alphabet lyrics<textarea rows={6} value={latin} onChange={e=>setLatin(e.target.value)}/></label><button disabled={!title.trim()} onClick={addSong}>Save and add to program</button><h3>Or add a saved bhajan</h3><select value={chosen} onChange={e=>setChosen(e.target.value)}><option value="">Choose saved bhajan</option>{songs.map(s=><option key={s.id} value={s.id}>{s.title}</option>)}</select> <button disabled={!chosen} onClick={addExisting}>Add existing</button></>}
+ {mode==='remove'&&<><h3>Manage program items</h3>{items.map((it,i)=><div key={it.id} style={{display:'flex',alignItems:'center',gap:8,flexWrap:'wrap',marginBottom:8}}><span style={{flex:1}}>{i+1}. {it.bhakti_songs?.title}</span><button className="outline" disabled={i===0} onClick={()=>move(i,-1)}>↑</button><button className="outline" disabled={i===items.length-1} onClick={()=>move(i,1)}>↓</button><button className="outline" onClick={()=>remove(it.id)}>Remove</button></div>)}</>}
+ </section>
+}
