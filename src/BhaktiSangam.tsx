@@ -31,54 +31,55 @@ export default function BhaktiSangam(){
  const[title,setTitle]=useState('');const[hindi,setHindi]=useState('');const[latin,setLatin]=useState('');
  const[chosen,setChosen]=useState('');const[librarySearch,setLibrarySearch]=useState('');const[msg,setMsg]=useState('');const[editingId,setEditingId]=useState('');const[saving,setSaving]=useState(false);
  const[sundarkandFrom,setSundarkandFrom]=useState(1);const[sundarkandTo,setSundarkandTo]=useState(10);const[sundarkandOnly,setSundarkandOnly]=useState(false);
- // Recorded sea-shell horn by Anton Platonov, CC BY 2.5.
- // https://commons.wikimedia.org/wiki/File:Dunkar_Sea_shell_horn_sound.ogg
- const shankAudio=useRef<HTMLAudioElement|null>(null);
+ // Generate a clean, continuous conch-like horn tone locally rather than
+ // replaying the watery remote recording. Three identical 20-second blows.
+ const shankContext=useRef<AudioContext|null>(null);
+ const shankNodes=useRef<OscillatorNode[]>([]);
+ const shankTimers=useRef<number[]>([]);
  const[shankPlaying,setShankPlaying]=useState(false);
  function stopShank(){
-   const audio=shankAudio.current;
-   shankAudio.current=null;
-   if(audio){audio.pause();audio.onended=null;audio.onerror=null;audio.removeAttribute('src');audio.load()}
+   shankTimers.current.forEach(id=>window.clearTimeout(id));
+   shankTimers.current=[];
+   shankNodes.current.forEach(node=>{try{node.stop()}catch{}try{node.disconnect()}catch{}});
+   shankNodes.current=[];
+   if(shankContext.current){void shankContext.current.close();shankContext.current=null}
    setShankPlaying(false);
  }
  function playShank(){
    stopShank();
-   const source='https://commons.wikimedia.org/wiki/Special:Redirect/file/Dunkar_Sea_shell_horn_sound.ogg';
-   // Each blow uses a fresh media element, rather than seeking an already
-   // finished element back to zero. This avoids stale decoder state on
-   // the third replay on some mobile browsers.
-   const startBlow=(number:number)=>{
-     const audio=new Audio(source);
-     audio.preload='auto';
-     audio.volume=0.85;
-     shankAudio.current=audio;
-     audio.onended=()=>{
-       if(shankAudio.current!==audio)return;
-       audio.onended=null;
-       audio.onerror=null;
-       if(number===3){stopShank();return}
-       startBlow(number+1);
-     };
-     audio.onerror=()=>{if(shankAudio.current===audio){stopShank();setMsg('The recorded Shankh sound could not load. Check your connection and try playing the Aarti again.')}};
-     // Skip the watery lead-in of the source recording on EVERY blow,
-     // including the third. Wait for the seek before starting playback.
-     const begin=()=>{
-       if(shankAudio.current!==audio)return;
-       void audio.play().then(()=>{if(shankAudio.current===audio)setShankPlaying(true)}).catch(()=>{if(shankAudio.current===audio){stopShank();setMsg('Audio playback was blocked. Tap Play Program to allow sound.')}});
-     };
-     audio.onloadedmetadata=()=>{
-       if(shankAudio.current!==audio)return;
-       const trimSeconds=1.5;
-       if(Number.isFinite(audio.duration)&&audio.duration>trimSeconds+2){
-         audio.onseeked=()=>{audio.onseeked=null;begin()};
-         audio.currentTime=trimSeconds;
-       }else begin();
-     };
-     audio.load();
+   const AudioContextClass=window.AudioContext;
+   if(!AudioContextClass)return;
+   const ctx=new AudioContextClass();
+   shankContext.current=ctx;
+   // A harmonically rich, gently modulated conch-like drone with no recorded
+   // background or pre-roll. Identical timbre on all three repetitions.
+   const blow=(number:number)=>{
+     if(shankContext.current!==ctx)return;
+     const now=ctx.currentTime;
+     const master=ctx.createGain();
+     master.gain.setValueAtTime(0.0001,now);
+     master.gain.exponentialRampToValueAtTime(0.42,now+0.8);
+     master.gain.setValueAtTime(0.42,now+18.8);
+     master.gain.exponentialRampToValueAtTime(0.0001,now+20);
+     master.connect(ctx.destination);
+     const base=146.8;
+     [1,2,3,4,5,6].forEach((harmonic,i)=>{
+       const osc=ctx.createOscillator();
+       const gain=ctx.createGain();
+       osc.type=i===0?'sawtooth':'sine';
+       osc.frequency.setValueAtTime(base*harmonic*0.985,now);
+       osc.frequency.linearRampToValueAtTime(base*harmonic,now+1.1);
+       gain.gain.value=[0.36,0.22,0.13,0.075,0.035,0.018][i];
+       osc.connect(gain);gain.connect(master);
+       osc.start(now);osc.stop(now+20.05);
+       shankNodes.current.push(osc);
+     });
+     if(number<3)shankTimers.current.push(window.setTimeout(()=>blow(number+1),21000));
+     else shankTimers.current.push(window.setTimeout(()=>stopShank(),20500));
    };
-   startBlow(1);
+   void ctx.resume().then(()=>{if(shankContext.current===ctx){setShankPlaying(true);blow(1)}}).catch(()=>{stopShank();setMsg('Audio playback was blocked. Tap Play Program to allow sound.')});
  }
- useEffect(()=>()=>{const audio=shankAudio.current;if(audio){audio.pause();audio.onended=null;shankAudio.current=null}},[]);
+ useEffect(()=>()=>{shankTimers.current.forEach(id=>window.clearTimeout(id));shankNodes.current.forEach(n=>{try{n.stop()}catch{}});if(shankContext.current)void shankContext.current.close()},[]);
  // Public-domain struck-gong sample by Stephan, via Wikimedia Commons.
  // This is a recorded gong approximation, not a verified traditional ghariyal.
  const ghariyalAudio=useRef<HTMLAudioElement|null>(null);
