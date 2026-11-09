@@ -1,0 +1,18 @@
+.bhakti-sangam{min-width:0;max-width:100%;overflow-wrap:anywhere;box-sizing:border-box}
+.bhakti-sangam *{box-sizing:border-box}
+.bhakti-sangam h2{font-size:clamp(1.3rem,5vw,1.85rem);margin-bottom:1rem}
+.bhakti-sangam .tabs{max-width:100%;gap:.5rem}
+.bhakti-sangam .tabs button{min-width:0;white-space:normal;line-height:1.25;padding:.7rem .65rem}
+.bhakti-sangam .tabs:first-of-type{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
+.bhakti-sangam .tabs:first-of-type button{width:100%}
+.bhakti-sangam .tabs:nth-of-type(2){display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
+.bhakti-sangam .tabs:nth-of-type(2) button{width:100%}
+.bhakti-sangam .tabs:nth-of-type(2) button:nth-child(2){grid-column:1/-1;grid-row:1;background:#052b55;color:white;border-color:#052b55}
+.bhakti-sangam .tabs:nth-of-type(2) button:nth-child(1){grid-column:1;grid-row:2}
+.bhakti-sangam .tabs:nth-of-type(2) button:nth-child(3){grid-column:2;grid-row:2}
+.bhakti-sangam .bhakti-sundarkand-controls{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr));gap:.6rem!important}
+.bhakti-sundarkand-controls>strong,.bhakti-sundarkand-controls>.muted{grid-column:1/-1}
+.bhakti-sundarkand-controls label{min-width:0;display:flex;flex-direction:column;align-items:stretch!important}
+.bhakti-sundarkand-controls label input[type=number]{width:100%!important;max-width:100%}
+.bhakti-sundarkand-controls label:has(input[type=checkbox]){grid-column:1/-1;flex-direction:row;align-items:center!important}
+@media(max-width:600px){.bhakti-sangam{padding:14px!important}.bhakti-sangam button{font-size:.9rem}.bhakti-sangam select,.bhakti-sangam input,.bhakti-sangam textarea{max-width:100%;min-width:0}}
