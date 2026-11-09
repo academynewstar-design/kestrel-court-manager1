@@ -41,20 +41,26 @@ export default function BhaktiSangam(){
  }
  function playShank(){
    stopShank();
-   const audio=new Audio('https://commons.wikimedia.org/wiki/Special:Redirect/file/Dunkar_Sea_shell_horn_sound.ogg');
-   audio.preload='auto';
-   audio.volume=0.85;
-   shankAudio.current=audio;
-   let blow=0;
-   audio.onended=()=>{
-     if(shankAudio.current!==audio)return;
-     blow+=1;
-     if(blow>=3){stopShank();return}
-     audio.currentTime=0;
-     void audio.play().catch(()=>{if(shankAudio.current===audio)stopShank()});
+   const source='https://commons.wikimedia.org/wiki/Special:Redirect/file/Dunkar_Sea_shell_horn_sound.ogg';
+   // Each blow uses a fresh media element, rather than seeking an already
+   // finished element back to zero. This avoids stale decoder state on
+   // the third replay on some mobile browsers.
+   const startBlow=(number:number)=>{
+     const audio=new Audio(source);
+     audio.preload='auto';
+     audio.volume=0.85;
+     shankAudio.current=audio;
+     audio.onended=()=>{
+       if(shankAudio.current!==audio)return;
+       audio.onended=null;
+       audio.onerror=null;
+       if(number===3){stopShank();return}
+       startBlow(number+1);
+     };
+     audio.onerror=()=>{if(shankAudio.current===audio){stopShank();setMsg('The recorded Shankh sound could not load. Check your connection and try playing the Aarti again.')}};
+     void audio.play().then(()=>setShankPlaying(true)).catch(()=>{if(shankAudio.current===audio){stopShank();setMsg('Audio playback was blocked. Tap Play Program to allow sound.')}});
    };
-   audio.onerror=()=>{if(shankAudio.current===audio){stopShank();setMsg('The recorded Shankh sound could not load. Check your connection and try playing the Aarti again.')}};
-   void audio.play().then(()=>setShankPlaying(true)).catch(()=>{if(shankAudio.current===audio){stopShank();setMsg('Audio playback was blocked. Tap Play Program to allow sound.')}});
+   startBlow(1);
  }
  useEffect(()=>()=>{const audio=shankAudio.current;if(audio){audio.pause();audio.onended=null;shankAudio.current=null}},[]);
  const viewer=useRef<HTMLDivElement>(null);
