@@ -29,45 +29,34 @@ export default function BhaktiSangam(){
  const[title,setTitle]=useState('');const[hindi,setHindi]=useState('');const[latin,setLatin]=useState('');
  const[chosen,setChosen]=useState('');const[librarySearch,setLibrarySearch]=useState('');const[msg,setMsg]=useState('');const[editingId,setEditingId]=useState('');const[saving,setSaving]=useState(false);
  const[sundarkandFrom,setSundarkandFrom]=useState(1);const[sundarkandTo,setSundarkandTo]=useState(10);const[sundarkandOnly,setSundarkandOnly]=useState(false);
- const shankAudio=useRef<AudioContext|null>(null);
- const shankSources=useRef<OscillatorNode[]>([]);
+ // Recorded sea-shell horn by Anton Platonov, CC BY 2.5.
+ // https://commons.wikimedia.org/wiki/File:Dunkar_Sea_shell_horn_sound.ogg
+ const shankAudio=useRef<HTMLAudioElement|null>(null);
  const[shankPlaying,setShankPlaying]=useState(false);
  function stopShank(){
-   shankSources.current.forEach(source=>{try{source.stop()}catch{}});
-   shankSources.current=[];
-   if(shankAudio.current){void shankAudio.current.close();shankAudio.current=null}
+   const audio=shankAudio.current;
+   shankAudio.current=null;
+   if(audio){audio.pause();audio.onended=null;audio.onerror=null;audio.removeAttribute('src');audio.load()}
    setShankPlaying(false);
  }
  function playShank(){
    stopShank();
-   // Three short, harmonically rich conch-style calls, generated locally so
-   // playback works without an external audio file or third-party service.
-   const context=new AudioContext();
-   shankAudio.current=context;
-   void context.resume();
-   const start=context.currentTime+0.08;
-   for(let blast=0;blast<3;blast++){
-     const t=start+blast*2.3;
-     for(const [harmonic,level] of [[1,0.14],[2,0.07],[3,0.035],[4,0.014]]){
-       const osc=context.createOscillator();
-       const gain=context.createGain();
-       osc.type='sine';
-       osc.frequency.setValueAtTime(148*harmonic,t);
-       osc.frequency.linearRampToValueAtTime(158*harmonic,t+0.35);
-       gain.gain.setValueAtTime(0,t);
-       gain.gain.linearRampToValueAtTime(level,t+0.22);
-       gain.gain.setValueAtTime(level,t+1.55);
-       gain.gain.exponentialRampToValueAtTime(0.001,t+1.95);
-       osc.connect(gain);gain.connect(context.destination);
-       osc.start(t);osc.stop(t+2.02);
-       shankSources.current.push(osc);
-     }
-   }
-   setShankPlaying(true);
-   const finalSource=shankSources.current[shankSources.current.length-1];
-   finalSource.onended=()=>{if(shankAudio.current===context){shankSources.current=[];void context.close();shankAudio.current=null;setShankPlaying(false)}};
+   const audio=new Audio('https://commons.wikimedia.org/wiki/Special:Redirect/file/Dunkar_Sea_shell_horn_sound.ogg');
+   audio.preload='auto';
+   audio.volume=0.85;
+   shankAudio.current=audio;
+   let blow=0;
+   audio.onended=()=>{
+     if(shankAudio.current!==audio)return;
+     blow+=1;
+     if(blow>=3){stopShank();return}
+     audio.currentTime=0;
+     void audio.play().catch(()=>{if(shankAudio.current===audio)stopShank()});
+   };
+   audio.onerror=()=>{if(shankAudio.current===audio){stopShank();setMsg('The recorded Shankh sound could not load. Check your connection and try playing the Aarti again.')}};
+   void audio.play().then(()=>setShankPlaying(true)).catch(()=>{if(shankAudio.current===audio){stopShank();setMsg('Audio playback was blocked. Tap Play Program to allow sound.')}});
  }
- useEffect(()=>()=>{shankSources.current.forEach(source=>{try{source.stop()}catch{}});if(shankAudio.current)void shankAudio.current.close()},[]);
+ useEffect(()=>()=>{const audio=shankAudio.current;if(audio){audio.pause();audio.onended=null;shankAudio.current=null}},[]);
  const viewer=useRef<HTMLDivElement>(null);
  async function refresh(targetProgramId?:number){const[p,b]=await Promise.all([supabase.from('bhakti_programs').select('id,title,created_by,created_at').order('id'),supabase.from('bhakti_songs').select('*').order('title')]);if(p.error)setMsg(p.error.message);const loaded=(p.data||[]) as Program[];setPrograms(loaded);if(b.error)setMsg(b.error.message);else setSongs((b.data||[]) as Song[]);const selectedId=targetProgramId??programId??loaded[0]?.id??null;if(selectedId!==null){setProgramId(selectedId);const{data,error}=await supabase.from('bhakti_program_items').select('id,position,song_id,program_id,bhakti_songs(id,title,lyrics_hindi,lyrics_latin)').eq('program_id',selectedId).order('position').order('id');if(error)setMsg(error.message);else setItems((data||[]) as unknown as Item[])}else setItems([])}
  useEffect(()=>{setProgramTitle(programs.find(p=>p.id===programId)?.title||'')},[programs,programId]);
