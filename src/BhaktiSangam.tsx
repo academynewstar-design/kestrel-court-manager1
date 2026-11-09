@@ -63,6 +63,24 @@ export default function BhaktiSangam(){
    startBlow(1);
  }
  useEffect(()=>()=>{const audio=shankAudio.current;if(audio){audio.pause();audio.onended=null;shankAudio.current=null}},[]);
+ // Public-domain struck-gong sample by Stephan, via Wikimedia Commons.
+ // This is a recorded gong approximation, not a verified traditional ghariyal.
+ const ghariyalAudio=useRef<HTMLAudioElement|null>(null);
+ function stopGhariyal(){
+   const audio=ghariyalAudio.current;
+   ghariyalAudio.current=null;
+   if(audio){audio.pause();audio.loop=false;audio.removeAttribute('src');audio.load()}
+ }
+ function playGhariyal(){
+   stopGhariyal();
+   const audio=new Audio('https://commons.wikimedia.org/wiki/Special:Redirect/file/Gong_or_bell_vibrant_(short).ogg');
+   audio.preload='auto';
+   audio.loop=true;
+   audio.volume=0.28;
+   ghariyalAudio.current=audio;
+   void audio.play().catch(()=>{if(ghariyalAudio.current===audio){stopGhariyal();setMsg('Ghariyal audio could not start. Please retry Play Program.')}});
+ }
+ useEffect(()=>()=>{const audio=ghariyalAudio.current;if(audio){audio.pause();ghariyalAudio.current=null}},[]);
  const viewer=useRef<HTMLDivElement>(null);
  async function refresh(targetProgramId?:number){const[p,b]=await Promise.all([supabase.from('bhakti_programs').select('id,title,created_by,created_at').order('id'),supabase.from('bhakti_songs').select('*').order('title')]);if(p.error)setMsg(p.error.message);const loaded=(p.data||[]) as Program[];setPrograms(loaded);if(b.error)setMsg(b.error.message);else setSongs((b.data||[]) as Song[]);const selectedId=targetProgramId??programId??loaded[0]?.id??null;if(selectedId!==null){setProgramId(selectedId);const{data,error}=await supabase.from('bhakti_program_items').select('id,position,song_id,program_id,bhakti_songs(id,title,lyrics_hindi,lyrics_latin)').eq('program_id',selectedId).order('position').order('id');if(error)setMsg(error.message);else setItems((data||[]) as unknown as Item[])}else setItems([])}
  useEffect(()=>{setProgramTitle(programs.find(p=>p.id===programId)?.title||'')},[programs,programId]);
@@ -117,10 +135,12 @@ export default function BhaktiSangam(){
    if(mode==='play'&&playing&&isAarti){
      // The sound begins with the Aarti; no separate Shankh control is required.
      playShank();
+     playGhariyal();
    }else{
      stopShank();
+     stopGhariyal();
    }
-   return ()=>{stopShank()};
+   return ()=>{stopShank();stopGhariyal()};
  // Audio is triggered on playback start or item change, not on each render.
  // eslint-disable-next-line react-hooks/exhaustive-deps
  },[mode,playing,playItemIndex,programId]);
