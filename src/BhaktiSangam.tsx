@@ -135,7 +135,8 @@ export default function BhaktiSangam(){
    if(mode==='play'&&playing&&isAarti){
      // The sound begins with the Aarti; no separate Shankh control is required.
      playShank();
-     playGhariyal();
+     // Ghariyal recording disabled: listeners reported a watery sound.
+     // Restore only after confirming a clean, authentic struck-metal recording.
    }else{
      stopShank();
      stopGhariyal();
