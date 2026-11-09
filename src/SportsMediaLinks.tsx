@@ -1,5 +1,5 @@
 import {useEffect,useState} from 'react';
-import {supabase} from './supabase';
+import {supabase} from './lib/supabase';
 type Category='Volleyball'|'Badminton'|'Soccer'|'Pickleball'|'Basketball';
 type Media={id:number;category:Category;title:string;url:string;created_at:string};
 const categories:Category[]=['Volleyball','Badminton','Soccer','Pickleball','Basketball'];
