@@ -43,7 +43,30 @@ export default function BhaktiSangam(){
  async function createProgram(){const label=newProgramTitle.trim();if(!label)return;setProgramBusy(true);setMsg('');const{data:userData,error:userError}=await supabase.auth.getUser();if(userError||!userData.user){setMsg(userError?.message||'Sign in before creating a program.');setProgramBusy(false);return}const{data,error}=await supabase.from('bhakti_programs').insert({title:label,created_by:userData.user.id}).select('id').single();setProgramBusy(false);if(error){setMsg(error.message);return}setNewProgramTitle('');setMsg('Program created.');setMode('view');setPlaying(false);await refresh(Number(data.id))}
  async function renameProgram(){if(programId===null||!programTitle.trim())return;setProgramBusy(true);const{error}=await supabase.from('bhakti_programs').update({title:programTitle.trim()}).eq('id',programId);setProgramBusy(false);setMsg(error?.message||'Program label updated.');if(!error)await refresh(programId)}
  async function remove(id:number){if(!confirm('Remove this item from the program? The lyrics will remain saved.'))return;const{error}=await supabase.from('bhakti_program_items').delete().eq('id',id);setMsg(error?.message||'Removed');refresh()}
- async function move(index:number,dir:number){const other=items[index+dir];if(!other)return;const current=items[index];const [a,b]=await Promise.all([supabase.from('bhakti_program_items').update({position:other.position}).eq('id',current.id),supabase.from('bhakti_program_items').update({position:current.position}).eq('id',other.id)]);setMsg(a.error?.message||b.error?.message||'Order updated');refresh()}
+ async function move(index:number,dir:number){
+  const other=items[index+dir],current=items[index];
+  if(!other||!current||programBusy)return;
+  setProgramBusy(true);
+  setMsg('');
+  // Positions can be duplicated after imports. Rewrite the complete ordering using
+  // fresh, noncolliding positions before normalizing to 1..N.
+  const reordered=[...items];
+  [reordered[index],reordered[index+dir]]=[reordered[index+dir],reordered[index]];
+  const maxPosition=Math.max(0,...items.map(item=>Number(item.position)||0));
+  const temporaryStart=maxPosition+items.length+1;
+  for(let i=0;i<reordered.length;i++){
+    const {error}=await supabase.from('bhakti_program_items').update({position:temporaryStart+i}).eq('id',reordered[i].id);
+    if(error){setMsg('Could not reorder songs: '+error.message);setProgramBusy(false);await refresh(programId);return}
+  }
+  for(let i=0;i<reordered.length;i++){
+    const {error}=await supabase.from('bhakti_program_items').update({position:i+1}).eq('id',reordered[i].id);
+    if(error){setMsg('Could not finalize song order: '+error.message);setProgramBusy(false);await refresh(programId);return}
+  }
+  setItems(reordered.map((item,i)=>({...item,position:i+1})));
+  setMsg('Order updated');
+  setProgramBusy(false);
+  await refresh(programId);
+}
  function lines(s:Song){const full=(script==='hindi'?s.lyrics_hindi:s.lyrics_latin)||'';if(!full)return 'Lyrics not added yet.';if(!/sundarkand/i.test(s.title))return full;const sections=full.split(/(?=^\[DOHA\s+\d+\])/gmi);if(sections.length<2)return full;const head=sections[0];const chunks=sections.slice(1).filter(chunk=>{const n=Number(chunk.match(/^\[DOHA\s+(\d+)\]/i)?.[1]);return n>=sundarkandFrom&&n<=sundarkandTo});return (sundarkandFrom===1?head:'')+chunks.join('');}
  const playItems=items.filter(it=>!sundarkandOnly||/sundarkand/i.test(it.bhakti_songs?.title||''));
  function playProgram(){if(playing)return;if(itemFinished){setPlayItemIndex(index=>index+1<playItems.length?index+1:0);setItemFinished(false)}setPlaying(true)}
