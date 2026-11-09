@@ -60,7 +60,21 @@ export default function BhaktiSangam(){
        startBlow(number+1);
      };
      audio.onerror=()=>{if(shankAudio.current===audio){stopShank();setMsg('The recorded Shankh sound could not load. Check your connection and try playing the Aarti again.')}};
-     void audio.play().then(()=>setShankPlaying(true)).catch(()=>{if(shankAudio.current===audio){stopShank();setMsg('Audio playback was blocked. Tap Play Program to allow sound.')}});
+     // Skip the watery lead-in of the source recording on EVERY blow,
+     // including the third. Wait for the seek before starting playback.
+     const begin=()=>{
+       if(shankAudio.current!==audio)return;
+       void audio.play().then(()=>{if(shankAudio.current===audio)setShankPlaying(true)}).catch(()=>{if(shankAudio.current===audio){stopShank();setMsg('Audio playback was blocked. Tap Play Program to allow sound.')}});
+     };
+     audio.onloadedmetadata=()=>{
+       if(shankAudio.current!==audio)return;
+       const trimSeconds=1.5;
+       if(Number.isFinite(audio.duration)&&audio.duration>trimSeconds+2){
+         audio.onseeked=()=>{audio.onseeked=null;begin()};
+         audio.currentTime=trimSeconds;
+       }else begin();
+     };
+     audio.load();
    };
    startBlow(1);
  }
