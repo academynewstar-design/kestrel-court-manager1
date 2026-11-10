@@ -82,12 +82,12 @@ export function AttendanceSheet({activity,onDirtyChange}:{activity:Activity;onDi
    if(error){setError(error.message);return}
    if(!data||!data.marks){setError('The server did not confirm that attendance was saved. Please retry or contact Admin.');return}
    setSheet(data);setMarks(data.marks||{});setReviewing(false);setAcknowledged(false);
+  setMessage(confirm?(data.report_queued?`Attendance confirmed. ${data.no_show_count} absent without Not Going; report queued for academynewstar@gmail.com.`:'Attendance confirmed. No unexcused absences to report.'):'Attendance saved. No absence report has been sent.');
   } catch(e) {
    setError(e instanceof Error?e.message:'Network error while saving attendance. Please retry.');
    return;
   } finally {setBusy(false)}
 
-  setMessage(confirm?(data.report_queued?`Attendance confirmed. ${data.no_show_count} absent without Not Going; report queued for academynewstar@gmail.com.`:'Attendance confirmed. No unexcused absences to report.'):'Attendance saved. No absence report has been sent.');
  }
  return <div className="attendance-sheet"><h3>{activity.location} · {activity.session_date}</h3><p>{activity.sport} · {activity.start_time.slice(0,5)}–{activity.end_time.slice(0,5)} · Toronto time</p>
   {sheet.confirmed_at&&<><p className="success">Attendance confirmed · {new Date(sheet.confirmed_at).toLocaleString('en-CA',{timeZone:'America/Toronto'})} Toronto. {sheet.no_show_count||0} absent without Not Going.</p><p className="muted">For a correction, contact Admin through Messages.</p></>}
