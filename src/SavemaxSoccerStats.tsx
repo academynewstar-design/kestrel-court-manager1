@@ -29,7 +29,7 @@ export default function SavemaxSoccerStats(){
   const profile=(p.data||[]).find(x=>x.id===uid);
   // The database enforces this permission again for every write.
   const {data:role}=await supabase.from('profiles').select('is_admin').eq('id',uid||'00000000-0000-0000-0000-000000000000').maybeSingle();
-  setEditable(!!role?.is_admin||uid==='b0bafa54-eb3f-4bab-afe3-7ec57b08bad7'||uid==='c6501430-f282-44b7-a70f-9176611a1b2e');
+  setEditable(!!role?.is_admin||uid==='fb86161a-203b-4638-ab7d-265b7f75b954'||uid==='c6501430-f282-44b7-a70f-9176611a1b2e');
   void profile;
  }
  useEffect(()=>{void load()},[]);
@@ -60,9 +60,9 @@ export default function SavemaxSoccerStats(){
  <div style={{display:'flex',gap:12,flexWrap:'wrap'}}><strong>🔵 Blue: {results.find(r=>String(r.session_id)===selected)?.blue_score??'—'}</strong><strong>🔴 Red: {results.find(r=>String(r.session_id)===selected)?.red_score??'—'}</strong></div>
  <h3>Goalscorers</h3>{sessionGoals.map(g=><div key={g.player_id} style={{display:'flex',justifyContent:'space-between',gap:8,marginBottom:8}}><span>{players.find(p=>p.id===g.player_id)?.full_name||'Player'} · {g.team} · {g.goals} goal(s)</span>{editable&&<button className="outline" disabled={busy} onClick={()=>removeGoals(g)}>Remove</button>}</div>)}
  {!sessionGoals.length&&<p className="muted">No goals recorded for this session.</p>}
- {editable&&<><h3>Captain / Admin Score Entry</h3><p className="muted">Team Blue: Ishaan · Team Red: Ibrahim Qaiser</p><div style={{display:'flex',gap:12,flexWrap:'wrap'}}><label>Blue score<input type="number" min="0" max="99" value={blue} onChange={e=>setBlue(Math.max(0,Math.min(99,Number(e.target.value)||0)))}/></label><label>Red score<input type="number" min="0" max="99" value={red} onChange={e=>setRed(Math.max(0,Math.min(99,Number(e.target.value)||0)))}/></label></div><button disabled={busy||!selected} onClick={saveScore}>Save match score</button>
+ {editable&&<><h3>Captain / Admin Score Entry</h3><p className="muted">Team Blue: Peter v · Team Red: Ibrahim Qaiser</p><div style={{display:'flex',gap:12,flexWrap:'wrap'}}><label>Blue score<input type="number" min="0" max="99" value={blue} onChange={e=>setBlue(Math.max(0,Math.min(99,Number(e.target.value)||0)))}/></label><label>Red score<input type="number" min="0" max="99" value={red} onChange={e=>setRed(Math.max(0,Math.min(99,Number(e.target.value)||0)))}/></label></div><button disabled={busy||!selected} onClick={saveScore}>Save match score</button>
  <h4>Record player goals</h4><label>Player<select value={player} onChange={e=>setPlayer(e.target.value)}><option value="">Select player</option>{players.map(p=><option key={p.id} value={p.id}>{p.full_name}</option>)}</select></label><label>Team<select value={team} onChange={e=>setTeam(e.target.value as 'Blue'|'Red')}><option>Blue</option><option>Red</option></select></label><label>Goals<input type="number" min="1" max="99" value={count} onChange={e=>setCount(Math.max(1,Math.min(99,Number(e.target.value)||1)))}/></label><button disabled={busy||!selected||!player} onClick={saveGoals}>Save player goals</button></>}
- {!editable&&<p className="muted">Only captains Ishaan and Ibrahim Qaiser, and administrators, can enter or edit scores.</p>}
+ {!editable&&<p className="muted">Only captains Peter v and Ibrahim Qaiser, and administrators, can enter or edit scores.</p>}
  </>}
  </section>
 }
