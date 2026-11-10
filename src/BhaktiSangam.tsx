@@ -25,6 +25,9 @@ export default function BhaktiSangam(){
  const[manageProgramsOpen,setManageProgramsOpen]=useState(false);
  const[items,setItems]=useState<Item[]>([]);const[songs,setSongs]=useState<Song[]>([]);const[programs,setPrograms]=useState<Program[]>([]);const[programId,setProgramId]=useState<number|null>(null);const[programTitle,setProgramTitle]=useState('');const[newProgramTitle,setNewProgramTitle]=useState('');const[programBusy,setProgramBusy]=useState(false);
  const[expanded,setExpanded]=useState<number[]>([]);
+  const dragSource=useRef<number|null>(null);
+  const[draggingId,setDraggingId]=useState<number|null>(null);
+  const[dragOverId,setDragOverId]=useState<number|null>(null);
  const[testItemId,setTestItemId]=useState('');
  const[script,setScript]=useState<'hindi'|'latin'>('latin');
  const[speed,setSpeed]=useState(2);const[playing,setPlaying]=useState(false);const[playItemIndex,setPlayItemIndex]=useState(0);const[itemFinished,setItemFinished]=useState(false);
@@ -112,30 +115,48 @@ export default function BhaktiSangam(){
  async function createProgram(){const label=newProgramTitle.trim();if(!label)return;setProgramBusy(true);setMsg('');const{data:userData,error:userError}=await supabase.auth.getUser();if(userError||!userData.user){setMsg(userError?.message||'Sign in before creating a program.');setProgramBusy(false);return}const{data,error}=await supabase.from('bhakti_programs').insert({title:label,created_by:userData.user.id}).select('id').single();setProgramBusy(false);if(error){setMsg(error.message);return}setNewProgramTitle('');setMsg('Program created.');setMode('view');setPlaying(false);await refresh(Number(data.id))}
  async function renameProgram(){if(programId===null||!programTitle.trim())return;setProgramBusy(true);const{error}=await supabase.from('bhakti_programs').update({title:programTitle.trim()}).eq('id',programId);setProgramBusy(false);setMsg(error?.message||'Program label updated.');if(!error)await refresh(programId??undefined)}
  async function remove(id:number){if(!confirm('Remove this item from the program? The lyrics will remain saved.'))return;const{error}=await supabase.from('bhakti_program_items').delete().eq('id',id);setMsg(error?.message||'Removed');refresh()}
- async function move(index:number,dir:number){
-  const other=items[index+dir],current=items[index];
-  if(!other||!current||programBusy)return;
-  setProgramBusy(true);
-  setMsg('');
-  // Positions can be duplicated after imports. Rewrite the complete ordering using
-  // fresh, noncolliding positions before normalizing to 1..N.
-  const reordered=[...items];
-  [reordered[index],reordered[index+dir]]=[reordered[index+dir],reordered[index]];
-  const maxPosition=Math.max(0,...items.map(item=>Number(item.position)||0));
-  const temporaryStart=maxPosition+items.length+1;
-  for(let i=0;i<reordered.length;i++){
-    const {error}=await supabase.from('bhakti_program_items').update({position:temporaryStart+i}).eq('id',reordered[i].id);
-    if(error){setMsg('Could not reorder songs: '+error.message);setProgramBusy(false);await refresh(programId??undefined);return}
-  }
-  for(let i=0;i<reordered.length;i++){
-    const {error}=await supabase.from('bhakti_program_items').update({position:i+1}).eq('id',reordered[i].id);
-    if(error){setMsg('Could not finalize song order: '+error.message);setProgramBusy(false);await refresh(programId??undefined);return}
-  }
-  setItems(reordered.map((item,i)=>({...item,position:i+1})));
-  setMsg('Order updated');
-  setProgramBusy(false);
-  await refresh(programId??undefined);
-}
+ async function reorder(from:number,to:number){
+   if(from===to||from<0||to<0||to>=items.length||programBusy)return;
+   const original=[...items];
+   const reordered=[...items];
+   const [moved]=reordered.splice(from,1);
+   reordered.splice(to,0,moved);
+   setProgramBusy(true);setMsg('Saving new order…');
+   setItems(reordered.map((item,i)=>({...item,position:i+1})));
+   const maxPosition=Math.max(0,...original.map(item=>Number(item.position)||0));
+   const temporaryStart=maxPosition+original.length+1;
+   for(let pass=0;pass<2;pass++){
+     for(let i=0;i<reordered.length;i++){
+       const position=pass===0?temporaryStart+i:i+1;
+       const {error}=await supabase.from('bhakti_program_items').update({position}).eq('id',reordered[i].id);
+       if(error){setMsg('Could not save order: '+error.message);setProgramBusy(false);await refresh(programId??undefined);return}
+     }
+   }
+   setMsg('Order saved');setProgramBusy(false);
+   await refresh(programId??undefined);
+ }
+ function move(index:number,dir:number){void reorder(index,index+dir)}
+ function dragStart(id:number,e:import('react').PointerEvent<HTMLButtonElement>){
+   if(programBusy)return;
+   e.preventDefault();
+   dragSource.current=id;setDraggingId(id);setDragOverId(id);
+   e.currentTarget.setPointerCapture(e.pointerId);
+ }
+ function dragMove(e:import('react').PointerEvent<HTMLButtonElement>){
+   if(dragSource.current===null)return;
+   const target=document.elementFromPoint(e.clientX,e.clientY)?.closest('[data-bhakti-item-id]');
+   if(target){setDragOverId(Number(target.getAttribute('data-bhakti-item-id')))}
+   if(e.clientY<85)window.scrollBy(0,-22);
+   else if(e.clientY>window.innerHeight-85)window.scrollBy(0,22);
+ }
+ function dragEnd(){
+   const source=dragSource.current,target=dragOverId;
+   dragSource.current=null;setDraggingId(null);setDragOverId(null);
+   if(source===null||target===null)return;
+   const from=items.findIndex(it=>it.id===source),to=items.findIndex(it=>it.id===target);
+   if(from>=0&&to>=0&&from!==to)void reorder(from,to);
+ }
+ const dragHandle=(it:Item,i:number)=><button type="button" className="outline" aria-label={'Drag to reorder '+it.bhakti_songs?.title} title="Hold and drag to reorder" disabled={programBusy} onPointerDown={e=>dragStart(it.id,e)} onPointerMove={dragMove} onPointerUp={dragEnd} onPointerCancel={()=>{dragSource.current=null;setDraggingId(null);setDragOverId(null)}} onKeyDown={e=>{if(e.key==='ArrowUp'){e.preventDefault();move(i,-1)}if(e.key==='ArrowDown'){e.preventDefault();move(i,1)}}} style={{touchAction:'none',cursor:draggingId===it.id?'grabbing':'grab',flex:'0 0 46px',minHeight:48,fontSize:23,padding:4}} >⠿</button>;
  function lines(s:Song){const full=(script==='hindi'?s.lyrics_hindi:s.lyrics_latin)||'';if(!full)return 'Lyrics not added yet.';if(!/sundarkand/i.test(s.title))return full;const sections=full.split(/(?=^\[DOHA\s+\d+\])/gmi);if(sections.length<2)return full;const head=sections[0];const chunks=sections.slice(1).filter(chunk=>{const n=Number(chunk.match(/^\[DOHA\s+(\d+)\]/i)?.[1]);return n>=sundarkandFrom&&n<=sundarkandTo});return (sundarkandFrom===1?head:'')+chunks.join('');}
  const playItems=items.filter(it=>!sundarkandOnly||/sundarkand/i.test(it.bhakti_songs?.title||''));
  function testSelectedItem(){
@@ -165,14 +186,14 @@ export default function BhaktiSangam(){
  const sundarkandControls=<div className="bhakti-sundarkand-controls" style={{display:'flex',alignItems:'center',gap:10,flexWrap:'wrap',margin:'12px 0'}}><strong>📖 Sundarkand reading</strong><label>From Doha <input type="number" min={1} max={60} value={sundarkandFrom} onChange={e=>setSundarkandFrom(Math.max(1,Math.min(60,Number(e.target.value)||1)))} style={{width:75}}/></label><label>Through Doha <input type="number" min={sundarkandFrom} max={60} value={sundarkandTo} onChange={e=>setSundarkandTo(Math.max(sundarkandFrom,Math.min(60,Number(e.target.value)||1)))} style={{width:75}}/></label><label style={{display:'flex',alignItems:'center',gap:5}}><input type="checkbox" checked={sundarkandOnly} onChange={e=>{setSundarkandOnly(e.target.checked);setPlaying(false);setPlayItemIndex(0);setItemFinished(false);if(viewer.current)viewer.current.scrollTop=0}}/> Sundarkand only</label><span className="muted">Includes chaupais and chhands between selected dohas</span></div>;
  return <section className="card bhakti-mobile"><h2>🪷 Bhakti Sangam</h2><div className="tabs bhakti-section-tabs" style={{display:'grid',gridTemplateColumns:'repeat(3,minmax(0,1fr))',gap:6}}><button className={section==='program'&&mode!=='library'&&mode!=='add'&&mode!=='edit'?'active':''} onClick={()=>{setSection('program');setMode('view');setPlaying(false)}}>Program</button><button className={section==='program'&&['library','add','edit'].includes(mode)?'active':''} onClick={()=>{setSection('program');setMode('library');setPlaying(false)}}>Library</button><button className={section==='ramayana'?'active':''} onClick={()=>{setSection('ramayana');setPlaying(false)}}>Tunes</button></div>{section==='ramayana'?<RamayanaTunes/>:<div>
 <div className="bhakti-program-selector"><label style={{flex:'1 1 180px'}}>Current program<select value={programId??''} onChange={e=>{if(!e.target.value)return;const id=Number(e.target.value);setProgramId(id);setMode('view');setPlaying(false);setPlayItemIndex(0);setItemFinished(false);setExpanded([]);refresh(id)}}><option value="">Select a program</option>{programs.map(p=><option key={p.id} value={p.id}>{p.title}</option>)}</select></label></div><details className="bhakti-manage"><summary>⚙ Manage programs</summary><div className="bhakti-manage-content"><div style={{display:'flex',alignItems:'end',gap:8,flexWrap:'wrap'}}><label style={{flex:'1 1 180px'}}>Program label<input value={programTitle} maxLength={120} onChange={e=>setProgramTitle(e.target.value)} placeholder="Program name"/></label><button disabled={programBusy||programId===null||!programTitle.trim()} onClick={renameProgram}>Save label</button></div><div style={{display:'flex',alignItems:'end',gap:8,flexWrap:'wrap',marginTop:8}}><label style={{flex:'1 1 180px'}}>New program label<input value={newProgramTitle} maxLength={120} onChange={e=>setNewProgramTitle(e.target.value)} placeholder="For example: Sunday Kirtan"/></label><button disabled={programBusy||!newProgramTitle.trim()} onClick={createProgram}>＋ Create program</button></div></div></details><div className="tabs bhakti-actions">{(mode==='library'||mode==='add'||mode==='edit'?[['library','Browse Library'],['add','New Bhajan'],['edit','Edit Bhajan']]:[['view','View Program'],['play','Play Program'],['remove','Manage Items']]).map(([k,v])=><button key={k} className={mode===k?'active':''} onClick={()=>{setMode(k as typeof mode);setPlaying(false)}}>{v}</button>)}</div><details className="bhakti-manage"><summary>Language and reading settings</summary><div className="tabs bhakti-language"><button className={script==='hindi'?'active':''} onClick={()=>setScript('hindi')}>हिन्दी</button><button className={script==='latin'?'active':''} onClick={()=>setScript('latin')}>Latin ABC</button></div>{items.some(it=>/sundarkand/i.test(it.bhakti_songs?.title||''))&&sundarkandControls}</details>{msg&&<p role="status">{msg}</p>}
- {mode==='view'&&<><h3>{programs.find(p=>p.id===programId)?.title||'Program'} ({items.length} items)</h3>{items.map((it,i)=><div key={it.id} style={{border:'1px solid #d1d5db',borderRadius:10,marginBottom:8,padding:12}}><div style={{display:'flex',alignItems:'center',gap:6}}><button className="outline" style={{flex:1,textAlign:'left'}} onClick={()=>setExpanded(a=>a.includes(it.id)?a.filter(x=>x!==it.id):[...a,it.id])}>{i+1}. {it.bhakti_songs?.title} {expanded.includes(it.id)?'▲':'▼'}</button><button className="outline" aria-label={'Move '+it.bhakti_songs?.title+' up'} title="Move up" disabled={i===0} onClick={()=>move(i,-1)}>↑</button><button className="outline" aria-label={'Move '+it.bhakti_songs?.title+' down'} title="Move down" disabled={i===items.length-1} onClick={()=>move(i,1)}>↓</button></div>{expanded.includes(it.id)&&<><p style={{whiteSpace:'pre-wrap',lineHeight:1.9}}>{lines(it.bhakti_songs)}</p><button className="outline" onClick={()=>beginEdit(it.bhakti_songs)}>✎ Edit lyrics</button></>}</div>)}{testItemPicker}<button onClick={()=>{setPlayItemIndex(0);setItemFinished(false);setMode('play');setPlaying(true)}}>▶ Play Program</button></>}
+ {mode==='view'&&<><h3>{programs.find(p=>p.id===programId)?.title||'Program'} ({items.length} items)</h3><p className="muted">Hold ⠿ and drag a bhajan to its new position. The order saves automatically.</p>{items.map((it,i)=><div key={it.id} data-bhakti-item-id={it.id} style={{border:dragOverId===it.id&&draggingId!==null?'2px solid #2563eb':'1px solid #d1d5db',opacity:draggingId===it.id?0.6:1,borderRadius:10,marginBottom:8,padding:12}}><div style={{display:'flex',alignItems:'center',gap:6}}><button className="outline" style={{flex:1,textAlign:'left'}} onClick={()=>setExpanded(a=>a.includes(it.id)?a.filter(x=>x!==it.id):[...a,it.id])}>{i+1}. {it.bhakti_songs?.title} {expanded.includes(it.id)?'▲':'▼'}</button>{dragHandle(it,i)}</div>{expanded.includes(it.id)&&<><p style={{whiteSpace:'pre-wrap',lineHeight:1.9}}>{lines(it.bhakti_songs)}</p><button className="outline" onClick={()=>beginEdit(it.bhakti_songs)}>✎ Edit lyrics</button></>}</div>)}{testItemPicker}<button onClick={()=>{setPlayItemIndex(0);setItemFinished(false);setMode('play');setPlaying(true)}}>▶ Play Program</button></>}
  {mode==='play'&&<>{/om jai jagdish/i.test(playItems[playItemIndex]?.bhakti_songs?.title||'')&&<p role="status">🐚 Shankh plays automatically when this Aarti begins{shankPlaying?' · sounding now':''}.</p>}<div style={{padding:12,border:'2px solid #b45309',borderRadius:12,background:'#fff7ed',color:'#111827',marginBottom:16}}><strong>🎵 Choose a song to play or test</strong>{testItemPicker}<small>Select any item, then tap Test selected item. This does not change the program order.</small></div><h3>{programs.find(p=>p.id===programId)?.title||'Program'}</h3><div style={{display:'flex',gap:8,alignItems:'center',flexWrap:'wrap',marginBottom:12}}><button disabled={!playItems.length||playing} onClick={playProgram}>{itemFinished?(playItemIndex+1<playItems.length?'▶ Play next item':'↺ Replay Program'):'▶ Play'}</button><button className="outline" disabled={!playing} onClick={()=>setPlaying(false)}>⏸ Pause</button><button className="outline" disabled={!playItems.length} onClick={()=>{setPlaying(false);setItemFinished(false);if(viewer.current)viewer.current.scrollTop=0;setPlaying(true)}}>↺ Restart item</button><button className="outline" onClick={()=>setSpeed(s=>Math.max(1,s-1))} aria-label="Slow down">−</button><strong>Speed {speed}</strong><button className="outline" onClick={()=>setSpeed(s=>Math.min(10,s+1))} aria-label="Speed up">+</button><button className="outline" onClick={()=>viewer.current?.requestFullscreen?.()}>⛶ Full screen</button></div>{itemFinished&&<p role="status">{playItemIndex+1<playItems.length?'Item finished. Playback paused. Press Play to continue to the next item.':'Program finished. Playback paused. Press Play to start again.'}</p>}<div ref={viewer} style={{height:'65vh',overflowY:'auto',background:'#101827',color:'#fff',borderRadius:12,padding:'32px 20px',textAlign:'center',scrollBehavior:'auto'}}>{playItems.length===0?<p>No items in this program.</p>:<article key={playItems[playItemIndex]?.id} style={{marginBottom:70}}><h2 style={{color:'#fff'}}>{playItemIndex+1}. {playItems[playItemIndex]?.bhakti_songs?.title}</h2><div style={{whiteSpace:'pre-wrap',fontSize:'clamp(23px,4vw,36px)',lineHeight:2.1}}>{playItems[playItemIndex]&&lines(playItems[playItemIndex].bhakti_songs)}</div></article>}</div></>}
 
  {mode==='library'&&<><h3>Bhajan Library ({songs.length} saved)</h3><p className="muted">Saved bhajans stay here until you add them to a program. Use Add to Program whenever you need them.</p><label>Search the library<input type="search" value={librarySearch} onChange={e=>setLibrarySearch(e.target.value)} placeholder="Search by title"/></label>{songs.filter(song=>song.title.toLocaleLowerCase().includes(librarySearch.trim().toLocaleLowerCase())).map(song=>{const count=items.filter(it=>it.song_id===song.id).length;const text=(script==='hindi'?song.lyrics_hindi:song.lyrics_latin)||'Lyrics not added yet.';return <article key={song.id} style={{border:'1px solid #d1d5db',borderRadius:10,marginBottom:10,padding:12}}><div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:10,flexWrap:'wrap'}}><strong>{song.title}</strong><div style={{display:'flex',alignItems:'center',gap:8,flexWrap:'wrap'}}><span className="muted">{count?('In program '+count+' time'+(count===1?'':'s')):'Library only'}</span><button onClick={()=>addToProgram(song.id)}>{count?'Add again':'Add to Program'}</button><button className="outline" onClick={()=>beginEdit(song)}>Edit lyrics</button></div></div><p style={{whiteSpace:'pre-wrap',lineHeight:1.7,marginBottom:0}}>{text.length>220?text.slice(0,220)+'…':text}</p></article>})}{songs.length===0&&<p className="muted">No bhajans in the library yet. Use Add Item to save the first one.</p>}</>}
 
  {mode==='add'&&<><h3>Save a new bhajan to the library</h3><label>Title<input value={title} onChange={e=>setTitle(e.target.value)}/></label><label>Hindi (Devanagari) lyrics<textarea rows={6} value={hindi} onChange={e=>setHindi(e.target.value)}/></label><label>Latin alphabet lyrics<textarea rows={6} value={latin} onChange={e=>setLatin(e.target.value)}/></label><button disabled={!title.trim()} onClick={addSong}>Save to library</button><h3>Or add a saved bhajan</h3><select value={chosen} onChange={e=>setChosen(e.target.value)}><option value="">Choose saved bhajan</option>{songs.map(s=><option key={s.id} value={s.id}>{s.title}</option>)}</select> <button disabled={!chosen} onClick={addExisting}>Add existing</button></>}
  {mode==='edit'&&<><h3>Edit or delete saved lyrics</h3><label>Choose bhajan<select value={editingId} onChange={e=>{const song=songs.find(x=>String(x.id)===e.target.value);if(song)beginEdit(song);else setEditingId('')}}><option value="">Select a bhajan</option>{songs.map(song=><option key={song.id} value={song.id}>{song.title}</option>)}</select></label>{editingId&&<><label>Title<input value={title} onChange={e=>setTitle(e.target.value)}/></label><label>Hindi (Devanagari) lyrics<textarea rows={12} value={hindi} onChange={e=>setHindi(e.target.value)}/></label><label>Latin ABC lyrics<textarea rows={12} value={latin} onChange={e=>setLatin(e.target.value)}/></label><div style={{display:'flex',gap:8,flexWrap:'wrap'}}><button disabled={saving||!title.trim()} onClick={saveEdit}>Save changes</button><button className="outline" disabled={saving} onClick={()=>{const song=songs.find(x=>String(x.id)===editingId);if(song)deleteSong(song)}}>Delete lyrics permanently</button></div><p className="muted">Changes to lyrics appear in all programs using this bhajan. Permanent deletion also removes it from programs.</p></>}</>}
- {mode==='remove'&&<><h3>Manage program items</h3>{items.map((it,i)=><div key={it.id} style={{display:'flex',alignItems:'center',gap:8,flexWrap:'wrap',marginBottom:8}}><span style={{flex:1}}>{i+1}. {it.bhakti_songs?.title}</span><button className="outline" disabled={i===0} onClick={()=>move(i,-1)}>↑</button><button className="outline" disabled={i===items.length-1} onClick={()=>move(i,1)}>↓</button><button className="outline" onClick={()=>remove(it.id)}>Remove</button></div>)}</>}
+ {mode==='remove'&&<><h3>Manage program items</h3>{items.map((it,i)=><div key={it.id} data-bhakti-item-id={it.id} style={{display:'flex',alignItems:'center',gap:8,flexWrap:'wrap',marginBottom:8,border:dragOverId===it.id&&draggingId!==null?'2px solid #2563eb':'1px solid transparent'}}>{dragHandle(it,i)}<span style={{flex:1}}>{i+1}. {it.bhakti_songs?.title}</span><button className="outline" onClick={()=>remove(it.id)}>Remove</button></div>)}</>}
  </div>}
  </section>
 }
