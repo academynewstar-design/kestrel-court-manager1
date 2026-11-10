@@ -77,20 +77,28 @@ export function AttendanceSheet({activity,onDirtyChange}:{activity:Activity;onDi
  async function save(confirm:boolean){
   if(busy||!sheet)return;setBusy(true);setError('');setMessage('');
   const completeMarks=Object.fromEntries(players.map(p=>[p.user_id,!!marks[p.user_id]]));
-  const{data,error}=await supabase.rpc('save_convenor_attendance',{p_session_id:sheet.session_id,p_marks:completeMarks,p_roster_token:sheet.roster_token,p_revision:sheet.revision,p_confirm:confirm});
-  setBusy(false);if(error){setError(error.message);return}setSheet(data);setMarks(data.marks||{});setReviewing(false);setAcknowledged(false);
+  try {
+   const{data,error}=await supabase.rpc('save_convenor_attendance',{p_session_id:sheet.session_id,p_marks:completeMarks,p_roster_token:sheet.roster_token,p_revision:sheet.revision,p_confirm:confirm});
+   if(error){setError(error.message);return}
+   if(!data||!data.marks){setError('The server did not confirm that attendance was saved. Please retry or contact Admin.');return}
+   setSheet(data);setMarks(data.marks||{});setReviewing(false);setAcknowledged(false);
+  } catch(e) {
+   setError(e instanceof Error?e.message:'Network error while saving attendance. Please retry.');
+   return;
+  } finally {setBusy(false)}
+
   setMessage(confirm?(data.report_queued?`Attendance confirmed. ${data.no_show_count} absent without Not Going; report queued for academynewstar@gmail.com.`:'Attendance confirmed. No unexcused absences to report.'):'Attendance saved. No absence report has been sent.');
  }
  return <div className="attendance-sheet"><h3>{activity.location} · {activity.session_date}</h3><p>{activity.sport} · {activity.start_time.slice(0,5)}–{activity.end_time.slice(0,5)} · Toronto time</p>
   {sheet.confirmed_at&&<><p className="success">Attendance confirmed · {new Date(sheet.confirmed_at).toLocaleString('en-CA',{timeZone:'America/Toronto'})} Toronto. {sheet.no_show_count||0} absent without Not Going.</p><p className="muted">For a correction, contact Admin through Messages.</p></>}
-  {!sheet.confirmed_at&&!sheet.can_save&&<p className="muted">Attendance opens one hour before play. Lists can be confirmed for up to seven days after the session.</p>}
+  {!sheet.confirmed_at&&!sheet.can_save&&<p role="status" className="error">Saving is currently unavailable for this session. Attendance opens one hour before play and closes seven days after the session. If you are within that window, contact Admin to check attendance permissions.</p>}
   {!sheet.confirmed_at&&sheet.can_save&&!sheet.can_confirm&&<p className="muted">Save your ticks during play. Final confirmation opens after the session ends.</p>}
   <p><strong>{attended} attended</strong> / {players.length} players</p>
   {courts.map(court=><fieldset key={court} disabled={busy||!!sheet.confirmed_at||!sheet.can_save||reviewing}><legend>{court}</legend>{players.filter(p=>p.court===court).map(p=><label className="attendance-player" key={p.user_id}>
    <input type="checkbox" checked={!!marks[p.user_id]} onChange={e=>{setMarks(old=>({...old,[p.user_id]:e.target.checked}));setMessage('')}}/>
    <span><strong>{p.player_name}</strong><small>{p.kind}{p.not_going?' · Not Going (excused)':''}</small></span><span className="attendance-status">{marks[p.user_id]?'Attended':p.not_going?'Excused':'Not ticked'}</span>
   </label>)}</fieldset>)}
-  {!players.length&&<p>No players on this session’s roster.</p>}
+  {!players.length&&<p role="status">No players on this session’s roster, so attendance cannot be submitted.</p>}
   {error&&<div role="alert" className="error"><p>Attendance was not saved: {error}</p><button className="outline" disabled={busy} onClick={load}>Reload player list</button><p>Reloading discards unsaved ticks.</p></div>}
   {message&&<p role="status" className="success">{message}</p>}
   {!sheet.confirmed_at&&<>{!reviewing?<div className="rowactions"><button disabled={busy||!sheet.can_save||!players.length} onClick={()=>save(false)}>{busy?'Saving…':'Save attendance'}</button><button className="outline" disabled={busy||!sheet.can_confirm||!players.length} onClick={()=>{setReviewing(true);setAcknowledged(false);setMessage('')}}>Review &amp; confirm attendance</button></div>:<div className="attendance-confirm"><h4>Review absences before confirming</h4>
