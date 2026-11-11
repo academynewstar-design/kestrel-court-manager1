@@ -4,6 +4,8 @@ import './PaymentVerification.css';
 export type PaymentReview={registration_id:number;state:'pending'|'verified'|'needs_review';checked_at?:string;verified_at?:string;verification_method?:string;reason?:string;admin_note?:string;conversation_id?:number;[key:string]:any};
 export function PaymentFlag({review,onMessage,error}:{review?:PaymentReview;onMessage?:()=>void;error?:string}){
  const[open,setOpen]=useState(false);
+ // No verification record means no review has been initiated; do not label it pending.
+ if(!review&&!error)return null;
  const state=review?.state||'pending';
  const label=error?'Verification unavailable':state==='verified'?'Verified':state==='needs_review'?'Needs review':'Pending verification';
  const detail=error?'Payment verification could not be loaded. Refresh or contact Admin.':state==='verified'?'Payment verified'+(review?.verification_method==='admin'?' by Admin.':'.'):state==='needs_review'?'Payment could not be matched yet. Contact Admin through Messages and provide the sender’s name, email used to send payment, amount, date and transfer reference. This does not mean you have not paid.':'Your Paid claim is awaiting a deposit check. Allow at least 60 minutes for email delays. Paid and Verified are separate statuses.';
