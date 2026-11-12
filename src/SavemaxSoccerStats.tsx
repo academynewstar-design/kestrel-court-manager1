@@ -16,7 +16,7 @@ export default function SavemaxSoccerStats(){
  const [blue,setBlue]=useState(0),[red,setRed]=useState(0);
  const [player,setPlayer]=useState(''),[team,setTeam]=useState<'Blue'|'Red'>('Blue'),[count,setCount]=useState(1);
  const [editable,setEditable]=useState(false),[busy,setBusy]=useState(false),[msg,setMsg]=useState('');
- const [tab,setTab]=useState<'results'|'strikers'>('results');
+ const [tab,setTab]=useState<'results'|'standings'|'strikers'>('results');
  async function load(){
   const [s,r,g,p,v,u]=await Promise.all([
    supabase.from('sessions').select('id,session_date,start_time').eq('sport_id',4).eq('location_id',18).order('session_date',{ascending:false}).limit(120),
@@ -41,6 +41,12 @@ export default function SavemaxSoccerStats(){
  const sessionGoals=goals.filter(g=>String(g.session_id)===selected);
  const currentVideo=videos.find(v=>String(v.session_id)===selected);
  const sums=goals.reduce((acc,g)=>{const entry=acc.get(g.player_id)||{goals:0,matches:0};entry.goals+=g.goals;entry.matches++;acc.set(g.player_id,entry);return acc},new Map<string,{goals:number;matches:number}>());
+ const completed=results.filter(r=>Number.isFinite(r.blue_score)&&Number.isFinite(r.red_score));
+ const blueWins=completed.filter(r=>r.blue_score>r.red_score).length;
+ const redWins=completed.filter(r=>r.red_score>r.blue_score).length;
+ const draws=completed.filter(r=>r.red_score===r.blue_score).length;
+ const blueGoals=completed.reduce((n,r)=>n+r.blue_score,0);
+ const redGoals=completed.reduce((n,r)=>n+r.red_score,0);
  const leaders=[...sums.entries()].map(([id,stats])=>({name:players.find(p=>p.id===id)?.full_name||'Player',...stats})).sort((a,b)=>b.goals-a.goals);
  async function saveVideo(){const id=youtubeId(videoUrl);if(!id){setMsg('Enter a valid YouTube video link.');return}if(!selected)return;setBusy(true);setMsg('');const {data:u}=await supabase.auth.getUser();const {error}=await supabase.from('savemax_match_videos').upsert({session_id:Number(selected),youtube_url:'https://www.youtube.com/watch?v='+id,youtube_video_id:id,updated_by:u.user?.id,updated_at:new Date().toISOString()},{onConflict:'session_id'});setMsg(error?.message||'Match video saved');setBusy(false);if(!error){setVideoUrl('');await load()}}
  async function removeVideo(){if(!selected)return;setBusy(true);const {error}=await supabase.from('savemax_match_videos').delete().eq('session_id',Number(selected));setMsg(error?.message||'Match video removed');setBusy(false);if(!error)await load()}
@@ -60,9 +66,9 @@ export default function SavemaxSoccerStats(){
   setMsg(error?.message||'Goals removed');setBusy(false);if(!error)await load();
  }
  return <section className="card"><h2>⚽ Savemax Soccer — Scores & Statistics</h2>
- <div className="tabs"><button className={tab==='results'?'active':''} onClick={()=>setTab('results')}>Match Results</button><button className={tab==='strikers'?'active':''} onClick={()=>setTab('strikers')}>🏆 Top Scorers</button></div>
+ <div className="tabs"><button className={tab==='results'?'active':''} onClick={()=>setTab('results')}>Match Results</button><button className={tab==='standings'?'active':''} onClick={()=>setTab('standings')}>🔴 Red vs Blue 🔵</button><button className={tab==='strikers'?'active':''} onClick={()=>setTab('strikers')}>🏆 Top Scorers</button></div>
  {msg&&<p role="status">{msg}</p>}
- {tab==='strikers'?<><h3>Best Striker Leaderboard</h3><p className="muted">Goals recorded across Savemax sessions.</p><table><thead><tr><th>Rank</th><th>Player</th><th>Goals</th><th>Scoring sessions</th></tr></thead><tbody>{leaders.map((p,i)=><tr key={p.name+i}><td>{i+1}</td><td>{p.name}</td><td>{p.goals}</td><td>{p.matches}</td></tr>)}</tbody></table>{!leaders.length&&<p>No goals recorded yet.</p>}</>:<>
+ {tab==='standings'?<><h3>Season Red vs Blue Standings</h3><p className="muted">Calculated from saved match scores only; matches without scores are excluded.</p><table><thead><tr><th>Team</th><th>Played</th><th>Wins</th><th>Draws</th><th>Losses</th><th>Goals For</th><th>Goals Against</th><th>Goal Difference</th></tr></thead><tbody><tr><td>🔴 Red</td><td>{completed.length}</td><td>{redWins}</td><td>{draws}</td><td>{blueWins}</td><td>{redGoals}</td><td>{blueGoals}</td><td>{redGoals-blueGoals}</td></tr><tr><td>🔵 Blue</td><td>{completed.length}</td><td>{blueWins}</td><td>{draws}</td><td>{redWins}</td><td>{blueGoals}</td><td>{redGoals}</td><td>{blueGoals-redGoals}</td></tr></tbody></table></>:tab==='strikers'?<><h3>Best Striker Leaderboard</h3><p className="muted">Goals recorded across Savemax sessions.</p><table><thead><tr><th>Rank</th><th>Player</th><th>Goals</th><th>Scoring sessions</th></tr></thead><tbody>{leaders.map((p,i)=><tr key={p.name+i}><td>{i+1}</td><td>{p.name}</td><td>{p.goals}</td><td>{p.matches}</td></tr>)}</tbody></table>{!leaders.length&&<p>No goals recorded yet.</p>}</>:<>
  <label>Session date<select value={selected} onChange={e=>setSelected(e.target.value)}>{sessions.map(s=><option key={s.id} value={s.id}>{s.session_date} · {s.start_time}</option>)}</select></label>
  <div style={{display:'flex',gap:12,flexWrap:'wrap'}}><strong>🔵 Blue: {results.find(r=>String(r.session_id)===selected)?.blue_score??'—'}</strong><strong>🔴 Red: {results.find(r=>String(r.session_id)===selected)?.red_score??'—'}</strong></div>
  <h3>Match Video</h3>{currentVideo?<div><p><a href={currentVideo.youtube_url} target="_blank" rel="noopener noreferrer">▶ Watch Match Video on YouTube</a></p><iframe title="Savemax soccer match recording" src={'https://www.youtube-nocookie.com/embed/'+currentVideo.youtube_video_id} style={{width:'100%',maxWidth:560,aspectRatio:'16 / 9',border:0}} allowFullScreen loading="lazy" referrerPolicy="strict-origin-when-cross-origin"/></div>:<p className="muted">No match recording shared yet.</p>}{editable&&<div><label>YouTube match recording link<input type="url" value={videoUrl} placeholder="https://www.youtube.com/watch?v=..." onChange={e=>setVideoUrl(e.target.value)}/></label><button disabled={busy||!selected||!videoUrl.trim()} onClick={saveVideo}>{currentVideo?'Replace Match Video':'Share Match Video'}</button>{currentVideo&&<button className="outline" disabled={busy} onClick={removeVideo}>Remove Video</button>}</div>}<h3>Goalscorers</h3>{sessionGoals.map(g=><div key={g.player_id} style={{display:'flex',justifyContent:'space-between',gap:8,marginBottom:8}}><span>{players.find(p=>p.id===g.player_id)?.full_name||'Player'} · {g.team} · {g.goals} goal(s)</span>{editable&&<button className="outline" disabled={busy} onClick={()=>removeGoals(g)}>Remove</button>}</div>)}
