@@ -19,12 +19,12 @@ export function GroupRequestButton({session,availability,registered,level,reques
  async function submit(){
   if(busy)return;setBusy(true);setError('');
   try{
-   const{error}=await supabase.rpc('request_dropin_group',{p_session_id:session.id,p_guest_names:names.map(n=>n.trim()),p_level:level,p_eligible:eligible});
-   if(error)throw error;setMessage('Group request sent. Your guests will appear only after Admin approval. Do not pay for the guests until approval.');
+   const{error}=await supabase.rpc('book_dropin_group_direct',{p_session_id:session.id,p_guest_names:names.map(n=>n.trim()),p_level:level,p_eligible:eligible});
+   if(error)throw error;setMessage('Guests booked successfully. Your group is confirmed.');
    dialog.current?.close();setOpen(false);setEligible(false);onSaved();changed();
   }catch(e:any){setError(e.message||'Unable to request group spots.')}finally{setBusy(false)}
  }
- return <>{!active&&<button className="outline" disabled={disabled||max<2} onClick={()=>{setOpen(true);setError('');setMessage('')}}>{registered?'Add guests — Admin approval':'Book for a group'}</button>}{message&&<p role="status" className="success">{message}</p>}{open&&<dialog ref={dialog} aria-labelledby={'group-request-title-'+session.id} onCancel={e=>{e.preventDefault();close()}} style={{width:'min(94vw,540px)',maxHeight:'85dvh',overflowY:'auto',border:0,borderRadius:16,padding:24}}>
+ return <>{!active&&<button className="outline" disabled={disabled||max<2} onClick={()=>{setOpen(true);setError('');setMessage('')}}>{registered?'Add Guests':'Book for a group'}</button>}{message&&<p role="status" className="success">{message}</p>}{open&&<dialog ref={dialog} aria-labelledby={'group-request-title-'+session.id} onCancel={e=>{e.preventDefault();close()}} style={{width:'min(94vw,540px)',maxHeight:'85dvh',overflowY:'auto',border:0,borderRadius:16,padding:24}}>
  <h2 id={'group-request-title-'+session.id}>Book Drop-in spots for your group</h2>
  <p>{session.sports?.name} · {session.locations?.name}<br/>{session.session_date} · {session.start_time.slice(0,5)}–{session.end_time.slice(0,5)}</p>
  <p>{max} total places available for your group{registered?' (including your existing spot)':''}. Every person uses one spot.</p>
@@ -32,12 +32,12 @@ export function GroupRequestButton({session,availability,registered,level,reques
  <label>Total people, including you<input required type="number" min={2} max={max} step={1} value={quantity} onChange={e=>editQuantity(e.target.value)}/></label>
  {names.map((name,i)=><label key={i}>Guest {i+1}: real name<input required maxLength={80} autoComplete="off" value={name} onChange={e=>setNames(old=>old.map((n,k)=>k===i?e.target.value:n))}/></label>)}
  <p><strong>{Number.isInteger(count)&&count>=2?money(count*Number(session.price||0)):'—'} for the whole group</strong> · {money(Number(session.price||0))} per person.</p>
- <p className="muted">Admin must approve the request before the guests appear in the Going List. Requested spots are held for up to 24 hours, ending at least 1 hour before the game. Your roster label will show your name + {Math.max(1,count-1)}.</p>
- {registered&&<p className="muted">Your existing spot stays unchanged while guests await approval. An existing payment will be credited after approval.</p>}
+ <p className="muted">Guests are booked directly when spaces are available. Each guest uses one roster spot. Your roster label will show your name + {Math.max(1,count-1)}.</p>
+ {registered&&<p className="muted">Your existing spot stays confirmed. An existing payment will be credited.</p>}
  <label style={{display:'flex',alignItems:'flex-start',gap:8}}><input type="checkbox" style={{width:'auto'}} checked={eligible} onChange={e=>setEligible(e.target.checked)}/>I have permission to register these guests and confirm they meet this activity's age and participation requirements.</label>
- <p>After approval, the organiser manages payment and attendance for the whole group. Send the amount due, then tap Mark Paid. Not Going cancels every group member.</p>
+ <p>The organiser manages payment and attendance for the whole group. Send the amount due, then tap Mark Paid. Not Going cancels every group member.</p>
  {error&&<p className="error" role="alert">{error}</p>}
- <div className="rowactions"><button disabled={busy||!eligible||!Number.isInteger(count)||count<2||count>max||names.length!==count-1||names.some(n=>!n.trim())}>{busy?'Sending…':'Request '+count+' spots'}</button><button type="button" className="outline" disabled={busy} onClick={close}>Cancel</button></div>
+ <div className="rowactions"><button disabled={busy||!eligible||!Number.isInteger(count)||count<2||count>max||names.length!==count-1||names.some(n=>!n.trim())}>{busy?'Booking…':'Book '+count+' spots'}</button><button type="button" className="outline" disabled={busy} onClick={close}>Cancel</button></div>
  </form></dialog>}</>;
 }
 
