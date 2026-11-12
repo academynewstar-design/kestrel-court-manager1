@@ -383,9 +383,9 @@ function AdminPermanentRequests(){const[rows,setRows]=useState<any[]>([]);const[
    const newRow=(existing||[]).find((r:any)=>String(r.user_id)===addUser);
    if(!newRow)throw Error('Player was not found in approved recurring assignments. Please verify their Season eligibility.');
    if(addLevel!==(newRow.player_level||'Intermediate')){
-    const {error:levelError}=await supabase.from('recurring_permanent_requests').update({player_level:addLevel}).eq('id',newRow.id);
+    const {error:levelError}=await supabase.from('recurring_permanent_requests').update({player_level:addLevel==='Low-Intermediate'?'low_intermediate':addLevel.toLowerCase()}).eq('id',newRow.id);
     if(levelError)throw levelError;
-    newRow.player_level=addLevel;
+    newRow.player_level=addLevel==='Low-Intermediate'?'low_intermediate':addLevel.toLowerCase();
    }
    setRows(existing||[]);setDraft(Object.fromEntries((existing||[]).map((r:any)=>[String(r.id),{court:r.court||'Court 1',level:r.player_level||'Intermediate'}])));
    setAddUser('');setPlayerSearch('');setMsg('Player added permanently to this weekly session.');
@@ -421,7 +421,7 @@ function AdminPermanentRequests(){const[rows,setRows]=useState<any[]>([]);const[
      if(error)throw error;
     }
     if(d.level!==(r.player_level||'Intermediate')){
-     const {error}=await supabase.from('recurring_permanent_requests').update({player_level:d.level}).eq('id',r.id);
+     const {error}=await supabase.from('recurring_permanent_requests').update({player_level:d.level==='Low-Intermediate'?'low_intermediate':d.level.toLowerCase()}).eq('id',r.id);
      if(error)throw error;
     }
    }
