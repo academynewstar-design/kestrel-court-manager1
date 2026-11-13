@@ -26,7 +26,7 @@ export default function ManualActivityPlayerAdd({activitySessionId,players,court
     if(/already registered for this activity/i.test(error.message)){
      const {data:current,error:lookupError}=await supabase.from('registrations').select('status,payment_status,session_id,sessions(session_date,start_time,court)').eq('user_id',playerId).in('status',['confirmed','pending','waitlist']);
      if(!lookupError&&current?.length){
-      const match=current.find((r:any)=>r.session_id===activitySessionId)||current.find((r:any)=>r.status==='confirmed');
+      const match=current.find((r:any)=>r.session_id===activitySessionId);
       if(match){setFeedback(`${player.full_name||player.email} is already ${match.status==='confirmed'?'on the Going roster':match.status==='waitlist'?'on the waitlist':'registered'}${match.payment_status==='paid'?' (paid)':''}. No duplicate registration was created. Check the activity roster or refresh the page.`);return;}
      }
     }
