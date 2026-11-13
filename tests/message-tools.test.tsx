@@ -6,7 +6,7 @@ import userEvent from '@testing-library/user-event';
 import {MessageComposer,CopyMessage,sendConversationMessage} from '../src/MessageTools';
 const mock=vi.hoisted(()=>({upload:vi.fn(),remove:vi.fn(),insert:vi.fn()}));
 vi.mock('../src/lib/supabase',()=>({supabase:{storage:{from:()=>({upload:mock.upload,remove:mock.remove})},from:()=>({insert:mock.insert})}}));
-afterEach(()=>{cleanup();vi.clearAllMocks()});
+afterEach(()=>{cleanup();vi.restoreAllMocks();vi.clearAllMocks()});
 describe('Private conversation screenshots',()=>{
  it('rejects unsupported files before uploading',async()=>{
   const result=await sendConversationMessage(4,'owner','',new File(['x'],'file.svg',{type:'image/svg+xml'}));
