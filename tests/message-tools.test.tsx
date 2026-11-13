@@ -23,7 +23,7 @@ describe('Private conversation screenshots',()=>{
   const user=userEvent.setup();const change=vi.fn();const onFile=vi.fn();
   render(<MessageComposer value="hello world" onChange={change} onFile={onFile} placeholder="Reply"/>);
   const input=screen.getByRole('textbox') as HTMLTextAreaElement;input.focus();input.setSelectionRange(6,11);
-  await navigator.clipboard.writeText('Malli');await user.click(screen.getByRole('button',{name:'Paste text'}));expect(change).toHaveBeenCalledWith('hello Malli');
+  vi.spyOn(navigator.clipboard,'readText').mockResolvedValue('Malli');await user.click(screen.getByRole('button',{name:'Paste text'}));expect(change).toHaveBeenCalledWith('hello Malli');
   const file=new File(['x'],'proof.png',{type:'image/png'});await user.upload(screen.getByLabelText(/Attach screenshot/),file);expect(onFile).toHaveBeenCalledWith(file);
  });
  it('copies a full message',async()=>{
