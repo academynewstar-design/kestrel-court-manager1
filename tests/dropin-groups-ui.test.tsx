@@ -19,18 +19,18 @@ describe('Group Drop-in booking',()=>{
   names.forEach((name,i)=>fireEvent.change(screen.getByLabelText('Guest '+(i+1)+': real name'),{target:{value:name}}));
   await user.click(screen.getByRole('checkbox'));
   expect(screen.getByText('$60.00 for the whole group')).toBeTruthy();
-  await user.click(screen.getByRole('button',{name:'Request 10 spots'}));
-  await waitFor(()=>expect(rpc).toHaveBeenCalledWith('request_dropin_group',{p_session_id:42,p_guest_names:names,p_level:'intermediate',p_eligible:true}));
+  await user.click(screen.getByRole('button',{name:'Book 10 spots'}));
+  await waitFor(()=>expect(rpc).toHaveBeenCalledWith('book_dropin_group_direct',{p_session_id:42,p_guest_names:names,p_level:'intermediate',p_eligible:true}));
   expect(saved).toHaveBeenCalled();
-  expect(screen.getByRole('status').textContent).toContain('only after Admin approval');
+  expect(screen.getByRole('status').textContent).toContain('Guests booked successfully');
  });
  it('prevents a request larger than capacity and credits an existing organiser spot in the limit',async()=>{
   const user=userEvent.setup();
   render(<GroupRequestButton session={session} availability={{occupied:8,total_capacity:12}} registered={true} level="intermediate" requests={[]} onSaved={()=>{}}/>);
-  await user.click(screen.getByRole('button',{name:'Add guests — Admin approval'}));
+  await user.click(screen.getByRole('button',{name:'Add Guests'}));
   expect(screen.getByRole('spinbutton').getAttribute('max')).toBe('5');
   fireEvent.change(screen.getByRole('spinbutton'),{target:{value:'10'}});
-  expect(screen.getByRole('button',{name:'Request 10 spots'}).hasAttribute('disabled')).toBe(true);
+  expect(screen.getByRole('button',{name:'Book 10 spots'}).hasAttribute('disabled')).toBe(true);
   expect(rpc).not.toHaveBeenCalled();
  });
  it('requires admin eligibility confirmation before approval',async()=>{
