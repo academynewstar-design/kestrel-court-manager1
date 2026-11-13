@@ -19,7 +19,7 @@ import FamilyManager,{AdminFamilyApprovals} from './FamilyManager';
 import Tournaments,{AdminTournaments} from './Tournaments';
 import {PlayBanner,SportsArtwork} from './PlayerVisuals';
 import GamePicker from './GamePicker';
-import {GroupRequestButton,MyGroupRequests,AdminGroupApprovals,collapseGroupRoster,type DropinGroup} from './DropinGroups';
+import {GroupRequestButton,MyGroupRequests,collapseGroupRoster,type DropinGroup} from './DropinGroups';
 import {MessageComposer,MessageAttachment,CopyMessage,sendConversationMessage} from './MessageTools';
 
 type PlayerType='permanent'|'dropin';
@@ -263,7 +263,7 @@ function AdminDashboard({profile,onLogout}:{profile:any,onLogout:()=>void}){
  const[rosterMode,setRosterMode]=useState<'activity'|'season'|'legacy'|'groups'>('activity');
  const[messageMode,setMessageMode]=useState<'inbox'|'announcements'|'whatsapp'>('inbox');
  const[reportMode,setReportMode]=useState<'reports'|'notGoing'|'seasonCourts'|'legacyDropin'|'unpaidDropins'>('reports');
- return <><header><div className="brandwrap"><img className="kestrellogo" src="/kestrel-bird.svg" alt="Kestrel Sports Club bird logo"/><div><div className="brand">KESTREL SPORTS CLUB · Admin</div><div className="sub">Play • Stay Healthy • Build Community</div><div className="memberline">{profile.full_name}</div></div></div><button className="outline" onClick={onLogout}>Sign out</button></header><main><div className="tabs admin-tabs">{[['today','🏠 Today'],['players','👥 Players'],['rosters','🏐 Rosters'],['tournaments','🏀 Tournaments'],['calendar','📅 Calendar'],['messages','💬 Messages'],['reports','📊 Reports'],['bhakti','🪷 Bhakti Sangam'],['media','🎬 Media Links']].map(([k,v])=><button className={tab===k?'active':''} onClick={()=>setTab(k as any)} key={k}>{v}</button>)}</div><AdminGroupApprovals/>
+ return <><header><div className="brandwrap"><img className="kestrellogo" src="/kestrel-bird.svg" alt="Kestrel Sports Club bird logo"/><div><div className="brand">KESTREL SPORTS CLUB · Admin</div><div className="sub">Play • Stay Healthy • Build Community</div><div className="memberline">{profile.full_name}</div></div></div><button className="outline" onClick={onLogout}>Sign out</button></header><main><div className="tabs admin-tabs">{[['today','🏠 Today'],['players','👥 Players'],['rosters','🏐 Rosters'],['tournaments','🏀 Tournaments'],['calendar','📅 Calendar'],['messages','💬 Messages'],['reports','📊 Reports'],['bhakti','🪷 Bhakti Sangam'],['media','🎬 Media Links']].map(([k,v])=><button className={tab===k?'active':''} onClick={()=>setTab(k as any)} key={k}>{v}</button>)}</div>
  {tab==='bhakti'&&<BhaktiSangam/>}{tab==='media'&&<SportsMediaLinks isAdmin/>}
  {tab==='today'&&<AdminToday onOpenRoster={()=>{setRosterMode('activity');setTab('rosters')}}/>}
  {tab==='players'&&<><AdminDropinAccountApprovals/><AdminNameReviews/><AdminPlayers/></>}
