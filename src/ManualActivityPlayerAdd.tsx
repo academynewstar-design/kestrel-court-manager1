@@ -22,7 +22,16 @@ export default function ManualActivityPlayerAdd({activitySessionId,players,court
    const{data,error}=entireCourt
     ?await supabase.rpc('admin_manage_exclusive_court_booking',{p_session_id:court!.id,p_lead_name:player.full_name||player.email,p_guest_count:guestCount,p_action:'book'})
     :await supabase.rpc('admin_add_player_to_activity',{p_session_id:activitySessionId,p_user_id:playerId});
-   if(error){setFeedback(error.message);return;}
+   if(error){
+    if(/already registered for this activity/i.test(error.message)){
+     const {data:current,error:lookupError}=await supabase.from('registrations').select('status,payment_status,session_id,sessions(session_date,start_time,court)').eq('user_id',playerId).in('status',['confirmed','pending','waitlist']);
+     if(!lookupError&&current?.length){
+      const match=current.find((r:any)=>r.session_id===activitySessionId)||current.find((r:any)=>r.status==='confirmed');
+      if(match){setFeedback(`${player.full_name||player.email} is already ${match.status==='confirmed'?'on the Going roster':match.status==='waitlist'?'on the waitlist':'registered'}${match.payment_status==='paid'?' (paid)':''}. No duplicate registration was created. Check the activity roster or refresh the page.`);return;}
+     }
+    }
+    setFeedback(error.message);return;
+   }
    setFeedback(entireCourt?`${court!.name} reserved for ${player.full_name||player.email}${guestCount?' + '+guestCount+' guests':''}.`:data==='waitlist'?'Activity full: player added to waitlist.':'Player added to activity roster.');
    setSearch('');setPlayerId('');setCourtId('');
    await onSaved();
