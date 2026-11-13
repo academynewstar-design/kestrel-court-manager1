@@ -247,7 +247,9 @@ function MyTeam({profile,sessions,assigned,regs,abs}:{profile:any,sessions:any[]
  const [view,setView]=useState<'team'|'attendance'>('team');
  const convenor=useConvenorAccess(profile.id);
  const [teams,setTeams]=useState<any[]>([]);const [going,setGoing]=useState<any[]>([]);const [error,setError]=useState('');
- const eligible=sessions.filter((s:any)=>!abs[String(s.id)]&&(assigned.has(String(s.id))||regs.some((r:any)=>String(r.session_id)===String(s.id)&&r.status==='confirmed')));
+ const eligibleSessions=sessions.filter((s:any)=>!abs[String(s.id)]&&(assigned.has(String(s.id))||regs.some((r:any)=>String(r.session_id)===String(s.id)&&r.status==='confirmed')));
+ // One read-only session roster per venue/sport/time, rather than one card per court.
+ const eligible=Array.from(new Map(eligibleSessions.map((s:any)=>[[s.locations?.name,s.sports?.name,s.session_date,s.start_time,s.end_time].join('|'),s])).values());
  const untilStart=(s:any)=>sessionStartTimestamp(s)-Date.now();
  useEffect(()=>{let active=true;async function refresh(){
  const goingIds=eligible.filter((s:any)=>untilStart(s)>=-7200000).map((s:any)=>s.id);
