@@ -9,7 +9,6 @@
 </style><script>(function(){
 var notices=[
 {end:Date.parse('2026-11-19T01:23:00Z'),message:'📢 BADMINTON: Vote in session polls. Repeated failure to vote may result in removal from the website and WhatsApp groups; admins will no longer respond to individual messages.'},
-{end:Date.parse('2026-11-19T02:54:00Z'),message:'📢 VOLLEYBALL DROP-INS: Pay within 24 hours of joining Going or your spot will be removed. Earlier game-day payment cutoffs still apply.'}
 ];
 function render(){
 var active=notices.filter(function(n){return Date.now()<n.end}),box=document.getElementById('kestrel-notice-ticker');
