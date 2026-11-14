@@ -14,7 +14,7 @@ export function GroupRequestButton({session,availability,registered,level,reques
  const max=availability?Math.max(0,availability.total_capacity-availability.occupied+(registered?1:0)):0;
  const count=Number(quantity);
  useEffect(()=>{if(open&&!dialog.current?.open)dialog.current?.showModal()},[open]);
- function editQuantity(value:string){setQuantity(value);const n=Number(value);if(Number.isInteger(n)&&n>=2&&n<=max)setNames(old=>Array.from({length:n-1},(_,i)=>old[i]||''))}
+ function editQuantity(value:string){const parsed=Number(value);const n=Number.isFinite(parsed)?Math.max(2,Math.min(max,Math.trunc(parsed))):2;setQuantity(String(n));setNames(old=>Array.from({length:n-1},(_,i)=>old[i]||''))}
  function close(){if(busy)return;dialog.current?.close();setOpen(false)}
  async function submit(){
   if(busy)return;setBusy(true);setError('');
@@ -24,7 +24,7 @@ export function GroupRequestButton({session,availability,registered,level,reques
    dialog.current?.close();setOpen(false);setEligible(false);onSaved();changed();
   }catch(e:any){setError(e.message||'Unable to request group spots.')}finally{setBusy(false)}
  }
- return <>{!active&&<button className="outline" disabled={disabled||max<2} onClick={()=>{setOpen(true);setError('');setMessage('')}}>{registered?'Add Guests':'Book for a group'}</button>}{message&&<p role="status" className="success">{message}</p>}{open&&<dialog ref={dialog} aria-labelledby={'group-request-title-'+session.id} onCancel={e=>{e.preventDefault();close()}} style={{width:'min(94vw,540px)',maxHeight:'85dvh',overflowY:'auto',border:0,borderRadius:16,padding:24}}>
+ return <>{!active&&<button className="outline" disabled={disabled||max<2} onClick={()=>{setQuantity('2');setNames(['']);setEligible(false);setOpen(true);setError('');setMessage('')}}>{registered?'Add Guests':'Book for a group'}</button>}{message&&<p role="status" className="success">{message}</p>}{open&&<dialog ref={dialog} aria-labelledby={'group-request-title-'+session.id} onCancel={e=>{e.preventDefault();close()}} style={{width:'min(94vw,540px)',maxHeight:'85dvh',overflowY:'auto',border:0,borderRadius:16,padding:24}}>
  <h2 id={'group-request-title-'+session.id}>Book Drop-in spots for your group</h2>
  <p>{session.sports?.name} · {session.locations?.name}<br/>{session.session_date} · {session.start_time.slice(0,5)}–{session.end_time.slice(0,5)}</p>
  <p>{max} total places available for your group{registered?' (including your existing spot)':''}. Every person uses one spot.</p>
