@@ -14,7 +14,8 @@ export function GroupRequestButton({session,availability,registered,level,reques
  const max=availability?Math.max(0,availability.total_capacity-availability.occupied+(registered?1:0)):0;
  const count=Number(quantity);
  useEffect(()=>{if(open&&!dialog.current?.open)dialog.current?.showModal()},[open]);
- function editQuantity(value:string){const parsed=Number(value);const n=Number.isFinite(parsed)?Math.max(registered?2:1,Math.min(max,Math.trunc(parsed))):2;setQuantity(String(n));setNames(old=>Array.from({length:n-1},(_,i)=>old[i]||''))}
+ function editQuantity(value:string){setQuantity(value);const n=Number(value);if(value!==''&&Number.isInteger(n)&&n>0&&n<=max)setNames(old=>Array.from({length:n-1},(_,i)=>old[i]||''))}
+ function normalizeQuantity(){const n=Number(quantity);if(quantity===''||!Number.isInteger(n)||n<(registered?2:1)||n>max)return;setNames(old=>Array.from({length:n-1},(_,i)=>old[i]||''))}
  function close(){if(busy)return;dialog.current?.close();setOpen(false)}
  async function submit(){
   if(busy)return;setBusy(true);setError('');
@@ -30,7 +31,7 @@ export function GroupRequestButton({session,availability,registered,level,reques
  <p>{session.sports?.name} · {session.locations?.name}<br/>{session.session_date} · {session.start_time.slice(0,5)}–{session.end_time.slice(0,5)}</p>
  <p>{max} total places available for your group{registered?' (including your existing spot)':''}. Every person uses one spot.</p>
  <form onSubmit={e=>{e.preventDefault();submit()}}>
- <label>Total people, including you<input required type="number" min={registered?2:1} max={max} step={1} value={quantity} onChange={e=>editQuantity(e.target.value)}/></label>
+ <label>Total people, including you<input required type="number" min={registered?2:1} max={max} step={1} value={quantity} onChange={e=>editQuantity(e.target.value)} onBlur={normalizeQuantity}/></label>
  {names.map((name,i)=><label key={i}>Guest {i+1}: real name<input required maxLength={80} autoComplete="off" value={name} onChange={e=>setNames(old=>old.map((n,k)=>k===i?e.target.value:n))}/></label>)}
  <p><strong>{Number.isInteger(count)&&count>=1?money(count*Number(session.price||0)):'—'} for the whole group</strong> · {money(Number(session.price||0))} per person.</p>
  <p className="muted">Guests are booked directly when spaces are available. Each guest uses one roster spot. Your roster label will show your name + {Math.max(0,count-1)}.</p>
