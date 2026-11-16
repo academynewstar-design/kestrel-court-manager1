@@ -7,37 +7,38 @@ const when=(g:DropinGroup)=>g.session_date+' · '+g.start_time.slice(0,5)+'–'+
 const expiry=(g:DropinGroup)=>new Date(g.expires_at).toLocaleString('en-CA',{timeZone:'America/Toronto',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});
 const changed=()=>window.dispatchEvent(new Event('kestrel-group-bookings-changed'));
 
-export function GroupRequestButton({session,availability,registered,level,requests,onSaved,disabled=false}:{session:any;availability?:{occupied:number;total_capacity:number};registered:boolean;level:string;requests:DropinGroup[];onSaved:()=>void;disabled?:boolean}){
- const[open,setOpen]=useState(false),[quantity,setQuantity]=useState('2'),[names,setNames]=useState<string[]>(['']),[eligible,setEligible]=useState(false),[busy,setBusy]=useState(false),[error,setError]=useState(''),[message,setMessage]=useState('');
+export function GroupRequestButton({session,availability,registered,level,requests,onSaved,onBookSingle,disabled=false}:{session:any;availability?:{occupied:number;total_capacity:number};registered:boolean;level:string;requests:DropinGroup[];onSaved:()=>void;onBookSingle?:()=>void;disabled?:boolean}){
+ const[open,setOpen]=useState(false),[quantity,setQuantity]=useState('1'),[names,setNames]=useState<string[]>([]),[eligible,setEligible]=useState(false),[busy,setBusy]=useState(false),[error,setError]=useState(''),[message,setMessage]=useState('');
  const dialog=useRef<HTMLDialogElement>(null);
  const active=requests.some(g=>String(g.session_id)===String(session.id)&&['pending','approved'].includes(g.status));
  const max=availability?Math.max(0,availability.total_capacity-availability.occupied+(registered?1:0)):0;
  const count=Number(quantity);
  useEffect(()=>{if(open&&!dialog.current?.open)dialog.current?.showModal()},[open]);
- function editQuantity(value:string){const parsed=Number(value);const n=Number.isFinite(parsed)?Math.max(2,Math.min(max,Math.trunc(parsed))):2;setQuantity(String(n));setNames(old=>Array.from({length:n-1},(_,i)=>old[i]||''))}
+ function editQuantity(value:string){const parsed=Number(value);const n=Number.isFinite(parsed)?Math.max(registered?2:1,Math.min(max,Math.trunc(parsed))):2;setQuantity(String(n));setNames(old=>Array.from({length:n-1},(_,i)=>old[i]||''))}
  function close(){if(busy)return;dialog.current?.close();setOpen(false)}
  async function submit(){
   if(busy)return;setBusy(true);setError('');
   try{
+   if(count===1&&!registered){onBookSingle?.();dialog.current?.close();setOpen(false);return;}
    const{error}=await supabase.rpc('book_dropin_group_direct',{p_session_id:session.id,p_guest_names:names.map(n=>n.trim()),p_level:level,p_eligible:eligible});
    if(error)throw error;setMessage('Guests booked successfully. Your group is confirmed.');
    dialog.current?.close();setOpen(false);setEligible(false);onSaved();changed();
   }catch(e:any){setError(e.message||'Unable to request group spots.')}finally{setBusy(false)}
  }
- return <>{!active&&<button className="outline" disabled={disabled||max<2} onClick={()=>{setQuantity('2');setNames(['']);setEligible(false);setOpen(true);setError('');setMessage('')}}>{registered?'Add Guests':'Book for a group'}</button>}{message&&<p role="status" className="success">{message}</p>}{open&&<dialog ref={dialog} aria-labelledby={'group-request-title-'+session.id} onCancel={e=>{e.preventDefault();close()}} style={{width:'min(94vw,540px)',maxHeight:'85dvh',overflowY:'auto',border:0,borderRadius:16,padding:24}}>
- <h2 id={'group-request-title-'+session.id}>Book Drop-in spots for your group</h2>
+ return <>{!active&&<button className="outline" disabled={disabled||max<(registered?2:1)} onClick={()=>{setQuantity(registered?'2':'1');setNames(registered?['']:[]);setEligible(false);setOpen(true);setError('');setMessage('')}}>{registered?'Add Guests':'Book'}</button>}{message&&<p role="status" className="success">{message}</p>}{open&&<dialog ref={dialog} aria-labelledby={'group-request-title-'+session.id} onCancel={e=>{e.preventDefault();close()}} style={{width:'min(94vw,540px)',maxHeight:'85dvh',overflowY:'auto',border:0,borderRadius:16,padding:24}}>
+ <h2 id={'group-request-title-'+session.id}>{registered?'Add guests':'Book Drop-in'}</h2>
  <p>{session.sports?.name} · {session.locations?.name}<br/>{session.session_date} · {session.start_time.slice(0,5)}–{session.end_time.slice(0,5)}</p>
  <p>{max} total places available for your group{registered?' (including your existing spot)':''}. Every person uses one spot.</p>
  <form onSubmit={e=>{e.preventDefault();submit()}}>
- <label>Total people, including you<input required type="number" min={2} max={max} step={1} value={quantity} onChange={e=>editQuantity(e.target.value)}/></label>
+ <label>Total people, including you<input required type="number" min={registered?2:1} max={max} step={1} value={quantity} onChange={e=>editQuantity(e.target.value)}/></label>
  {names.map((name,i)=><label key={i}>Guest {i+1}: real name<input required maxLength={80} autoComplete="off" value={name} onChange={e=>setNames(old=>old.map((n,k)=>k===i?e.target.value:n))}/></label>)}
- <p><strong>{Number.isInteger(count)&&count>=2?money(count*Number(session.price||0)):'—'} for the whole group</strong> · {money(Number(session.price||0))} per person.</p>
- <p className="muted">Guests are booked directly when spaces are available. Each guest uses one roster spot. Your roster label will show your name + {Math.max(1,count-1)}.</p>
+ <p><strong>{Number.isInteger(count)&&count>=1?money(count*Number(session.price||0)):'—'} for the whole group</strong> · {money(Number(session.price||0))} per person.</p>
+ <p className="muted">Guests are booked directly when spaces are available. Each guest uses one roster spot. Your roster label will show your name + {Math.max(0,count-1)}.</p>
  {registered&&<p className="muted">Your existing spot stays confirmed. An existing payment will be credited.</p>}
  <label style={{display:'flex',alignItems:'flex-start',gap:8}}><input type="checkbox" style={{width:'auto'}} checked={eligible} onChange={e=>setEligible(e.target.checked)}/>I have permission to register these guests and confirm they meet this activity's age and participation requirements.</label>
  <p>The organiser manages payment and attendance for the whole group. Send the amount due, then tap Mark Paid. Not Going cancels every group member.</p>
  {error&&<p className="error" role="alert">{error}</p>}
- <div className="rowactions"><button disabled={busy||!eligible||!Number.isInteger(count)||count<2||count>max||names.length!==count-1||names.some(n=>!n.trim())}>{busy?'Booking…':'Book '+count+' spots'}</button><button type="button" className="outline" disabled={busy} onClick={close}>Cancel</button></div>
+ <div className="rowactions"><button disabled={busy||(count>1&&!eligible)||!Number.isInteger(count)||count<(registered?2:1)||count>max||names.length!==count-1||names.some(n=>!n.trim())}>{busy?'Booking…':count===1?'Book my spot':'Book '+count+' spots'}</button><button type="button" className="outline" disabled={busy} onClick={close}>Cancel</button></div>
  </form></dialog>}</>;
 }
 
