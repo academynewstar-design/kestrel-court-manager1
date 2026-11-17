@@ -26,7 +26,7 @@ export function GroupRequestButton({session,availability,registered,level,reques
    dialog.current?.close();setOpen(false);setEligible(false);onSaved();changed();
   }catch(e:any){setError(e.message||'Unable to request group spots.')}finally{setBusy(false)}
  }
- return <>{!active&&<button className="outline" disabled={disabled||max<(registered?2:1)} onClick={()=>{setQuantity(registered?'2':'1');setNames(registered?['']:[]);setEligible(false);setOpen(true);setError('');setMessage('')}}>{registered?'Add Guests':'Book'}</button>}{message&&<p role="status" className="success">{message}</p>}{open&&<dialog ref={dialog} aria-labelledby={'group-request-title-'+session.id} onCancel={e=>{e.preventDefault();close()}} style={{width:'min(94vw,540px)',maxHeight:'85dvh',overflowY:'auto',border:0,borderRadius:16,padding:24}}>
+ return <>{!active&&<button className="outline" disabled={disabled||max<(registered?2:1)} onClick={()=>{setQuantity(registered?'2':'1');setNames(registered?['']:[]);setEligible(false);setOpen(true);setError('');setMessage('')}}>{registered?'Add Guests':'Book for a group'}</button>}{message&&<p role="status" className="success">{message}</p>}{open&&<dialog ref={dialog} aria-labelledby={'group-request-title-'+session.id} onCancel={e=>{e.preventDefault();close()}} style={{width:'min(94vw,540px)',maxHeight:'85dvh',overflowY:'auto',border:0,borderRadius:16,padding:24}}>
  <h2 id={'group-request-title-'+session.id}>{registered?'Add guests':'Book Drop-in'}</h2>
  <p>{session.sports?.name} · {session.locations?.name}<br/>{session.session_date} · {session.start_time.slice(0,5)}–{session.end_time.slice(0,5)}</p>
  <p>{max} total places available for your group{registered?' (including your existing spot)':''}. Every person uses one spot.</p>
