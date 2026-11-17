@@ -13,7 +13,7 @@ describe('Group Drop-in booking',()=>{
  it('submits ten people including the organiser, with nine guests',async()=>{
   const user=userEvent.setup();const saved=vi.fn();
   render(<GroupRequestButton session={session} availability={{occupied:0,total_capacity:12}} registered={false} level="intermediate" requests={[]} onSaved={saved}/>);
-  await user.click(screen.getByRole('button',{name:'Book for a group'}));
+  await user.click(screen.getByRole('button',{name:'Book with guests'}));
   fireEvent.change(screen.getByRole('spinbutton'),{target:{value:'10'}});
   const names=Array.from({length:9},(_,i)=>'Guest '+String.fromCharCode(65+i));
   names.forEach((name,i)=>fireEvent.change(screen.getByLabelText('Guest '+(i+1)+': real name'),{target:{value:name}}));
