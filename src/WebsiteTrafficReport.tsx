@@ -19,6 +19,16 @@ export default function WebsiteTrafficReport({start,end,refresh}:{start:string;e
   void load();const timer=setInterval(()=>void load(),60000);
   return()=>{active=false;clearInterval(timer)};
  },[start,end,refresh]);
+ const uniquePeople=Object.values(identified.reduce<Record<string,{name:string;email:string;first:string;last:string;views:number}>>((acc,visit)=>{
+  const email=(visit.visitor_email||'').trim().toLowerCase();
+  const key=email||visit.visitor_name.trim().toLowerCase();
+  if(!key)return acc;
+  const existing=acc[key];
+  if(!existing){acc[key]={name:visit.visitor_name,email:visit.visitor_email,first:visit.visited_at,last:visit.visited_at,views:1};}
+  else{existing.views++;if(visit.visited_at<existing.first)existing.first=visit.visited_at;if(visit.visited_at>existing.last)existing.last=visit.visited_at;}
+  return acc;
+ },{})).sort((a,b)=>b.last.localeCompare(a.last));
+ const localTime=(value:string)=>new Date(value).toLocaleString('en-CA',{timeZone:'America/Toronto'});
  const total=rows.find(r=>r.page_name==='ALL');
  const details=rows.filter(r=>r.page_name!=='ALL');
  const csv=()=>{
@@ -36,6 +46,6 @@ export default function WebsiteTrafficReport({start,end,refresh}:{start:string;e
    <p><strong>{Number(total?.unique_visitors||0).toLocaleString()}</strong> unique visitors</p>
    <p><strong>{Number(total?.guest_page_views||0).toLocaleString()}</strong> anonymous page views</p>
   </div><div style={{overflowX:'auto'}}><table><thead><tr><th>Date</th><th>Page</th><th>Views</th><th>Visits</th><th>Unique</th><th>Guest views</th></tr></thead><tbody>{details.map((r,i)=><tr key={i}><td>{r.day}</td><td>{r.page_name}</td><td>{r.page_views}</td><td>{r.visits}</td><td>{r.unique_visitors}</td><td>{r.guest_page_views}</td></tr>)}</tbody></table></div>
-  {!details.length&&<p className="muted">No tracked visits for these dates.</p>}<h4>Signed-in visitor activity</h4><p className="muted">Names are available only when visitors are signed in. Anonymous visits cannot be attributed to a player.</p><div style={{overflowX:'auto'}}><table><thead><tr><th>Visited (Toronto)</th><th>Name</th><th>Email</th><th>Page</th></tr></thead><tbody>{identified.map((r,i)=><tr key={i}><td>{new Date(r.visited_at).toLocaleString('en-CA',{timeZone:'America/Toronto'})}</td><td>{r.visitor_name||'—'}</td><td>{r.visitor_email||'—'}</td><td>{r.page_name}</td></tr>)}</tbody></table></div>{!identified.length&&<p className="muted">No signed-in visits recorded in this date range.</p>}</>}
+  {!details.length&&<p className="muted">No tracked visits for these dates.</p>}<h4>Unique signed-in visitors ({uniquePeople.length})</h4><p className="muted">One row per signed-in person, whether or not they RSVP or join a season. Visits and first/last seen reflect the latest 5,000 tracked signed-in page views in the selected date range; older activity may not be included. Anonymous visitors are counted above but cannot be identified.</p><div style={{overflowX:'auto'}}><table><thead><tr><th>Name</th><th>Email</th><th>First seen (Toronto)</th><th>Last seen (Toronto)</th><th>Page views</th></tr></thead><tbody>{uniquePeople.map(p=><tr key={p.email||p.name}><td>{p.name||'—'}</td><td>{p.email||'—'}</td><td>{localTime(p.first)}</td><td>{localTime(p.last)}</td><td>{p.views}</td></tr>)}</tbody></table></div>{!uniquePeople.length&&<p className="muted">No signed-in visits recorded in this date range.</p>}</>}
  </section>;
 }
