@@ -3,7 +3,7 @@ import {supabase} from './lib/supabase';
 
 export function useDropinAccountApproval(profile:any){
  const [status,setStatus]=useState('loading'),[error,setError]=useState('');
- const exempt=profile.player_type==='permanent'&&profile.player_type_status==='approved';
+ const exempt=false;
  async function refresh(){
   if(exempt){setStatus('approved');return}
   try{
@@ -24,7 +24,7 @@ export function DropinApprovalGate({userId,approval,children}:{userId:string;app
   await approval.refresh();setBusy(false);
  }
  if(approval.approved)return <>{children}</>;
- return <section className="card form"><h2>Drop-in account approval</h2>
+ return <section className="card form"><h2>Player account approval</h2>
   <p>Admin must recognize and approve you before you can join games, waitlists or request group spots. Approval is needed once for this account, across all sports and locations.</p>
   {approval.status==='loading'?<p role="status">Checking approval…</p>:approval.status==='pending'?<p role="status">⏳ Pending Admin approval. Please wait while Admin checks your name and email.</p>:approval.status==='rejected'?<p role="status">Your Drop-in request was not approved. Use Messages to contact Admin.</p>:approval.status==='none'?<button disabled={busy} onClick={request}>{busy?'Submitting…':'Request Admin approval'}</button>:null}
   {(error||approval.error)&&<p className="error" role="alert">{error||approval.error}</p>}
@@ -48,11 +48,11 @@ export function AdminDropinAccountApprovals(){
   setBusy('');
  }
  const visible=rows.filter(r=>showReviewed||r.status==='pending');
- return <section className="card"><div className="sectionhead"><h2>Drop-in account approvals ({rows.filter(r=>r.status==='pending').length} pending)</h2><button className="outline" onClick={load}>Refresh approvals</button></div>
+ return <section className="card"><div className="sectionhead"><h2>Player account approvals ({rows.filter(r=>r.status==='pending').length} pending)</h2><button className="outline" onClick={load}>Refresh approvals</button></div>
   <p>Approve only players you recognize. Check both the name and email, including possible duplicate accounts. This grants booking access; existing account bans still apply.</p>
   <label><input type="checkbox" checked={showReviewed} onChange={e=>setShowReviewed(e.target.checked)}/> Show approved and rejected accounts</label>
   {error&&<p className="error" role="alert">{error}</p>}{message&&<p role="status">{message}</p>}
-  {visible.map(r=><div className="playerrow" key={r.user_id}><div><strong>{r.profiles?.full_name||'Player'}</strong><div>{r.profiles?.email}</div><div className="muted">{r.status} · Requested {new Date(r.created_at).toLocaleString('en-CA',{timeZone:'America/Toronto'})}</div></div><div className="rowactions">{r.status!=='approved'&&<button disabled={!!busy} onClick={()=>review(r.user_id,'approved')}>Approve Drop-in</button>}{r.status!=='rejected'&&<button className="outline danger" disabled={!!busy} onClick={()=>review(r.user_id,'rejected')}>{r.status==='approved'?'Revoke access':'Reject Drop-in'}</button>}</div></div>)}
+  {visible.map(r=><div className="playerrow" key={r.user_id}><div><strong>{r.profiles?.full_name||'Player'}</strong><div>{r.profiles?.email}</div><div className="muted">{r.status} · Requested {new Date(r.created_at).toLocaleString('en-CA',{timeZone:'America/Toronto'})}</div></div><div className="rowactions">{r.status!=='approved'&&<button disabled={!!busy} onClick={()=>review(r.user_id,'approved')}>Approve Player</button>}{r.status!=='rejected'&&<button className="outline danger" disabled={!!busy} onClick={()=>review(r.user_id,'rejected')}>{r.status==='approved'?'Revoke access':'Reject Player'}</button>}</div></div>)}
   {!visible.length&&!error&&<p className="muted">No pending Drop-in account requests.</p>}
  </section>;
 }
