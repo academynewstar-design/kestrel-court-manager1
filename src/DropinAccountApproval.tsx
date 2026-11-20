@@ -12,7 +12,7 @@ export function useDropinAccountApproval(profile:any){
   }catch(e:any){setError(e.message||'Unable to check approval. Please try again.');setStatus('error')}
  }
  useEffect(()=>{setStatus('loading');refresh();const timer=setInterval(refresh,30000);return()=>clearInterval(timer)},[profile.id,exempt]);
- return {status,error,refresh,approved:true};
+ return {status,error,refresh,approved:status==='approved'};
 }
 
 export function DropinApprovalGate({userId,approval,children}:{userId:string;approval:ReturnType<typeof useDropinAccountApproval>;children:ReactNode}){
@@ -23,9 +23,7 @@ export function DropinApprovalGate({userId,approval,children}:{userId:string;app
   if(result.error&&result.error.code!=='23505')setError(result.error.message);
   await approval.refresh();setBusy(false);
  }
- return <>{children}</>;
- /* Legacy approval screen retired; bookings no longer require account approval. */
-
+ if(approval.approved)return <>{children}</>;
  return <section className="card form"><h2>Drop-in account approval</h2>
   <p>Admin must recognize and approve you before you can join games, waitlists or request group spots. Approval is needed once for this account, across all sports and locations.</p>
   {approval.status==='loading'?<p role="status">Checking approval…</p>:approval.status==='pending'?<p role="status">⏳ Pending Admin approval. Please wait while Admin checks your name and email.</p>:approval.status==='rejected'?<p role="status">Your Drop-in request was not approved. Use Messages to contact Admin.</p>:approval.status==='none'?<button disabled={busy} onClick={request}>{busy?'Submitting…':'Request Admin approval'}</button>:null}
