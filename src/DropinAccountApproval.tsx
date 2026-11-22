@@ -8,7 +8,11 @@ export function useDropinAccountApproval(profile:any){
   if(exempt){setStatus('approved');return}
   try{
    const {data,error}=await supabase.from('dropin_account_approvals').select('status').eq('user_id',profile.id).maybeSingle();
-   setError(error?.message||'');setStatus(error?'error':data?.status||'none');
+   setError(error?.message||'');
+   // Honour explicit account decisions first. Existing players approved under the
+   // earlier player-access workflow must not be asked for a second approval.
+   const previouslyApproved=profile.player_type_status==='approved'||profile.status==='approved';
+   setStatus(error?'error':data?.status||(previouslyApproved?'approved':'none'));
   }catch(e:any){setError(e.message||'Unable to check approval. Please try again.');setStatus('error')}
  }
  useEffect(()=>{setStatus('loading');refresh();const timer=setInterval(refresh,30000);return()=>clearInterval(timer)},[profile.id,exempt]);
