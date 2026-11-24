@@ -1,4 +1,5 @@
 import {useEffect,useState,type ReactNode} from 'react';
+import {sendConversationMessage} from './MessageTools';
 import {supabase} from './lib/supabase';
 
 export function useDropinAccountApproval(profile:any){
@@ -43,6 +44,8 @@ export function DropinApprovalGate({userId,approval,children}:{userId:string;app
 }
 
 export function AdminDropinAccountApprovals(){
+ const [target,setTarget]=useState(''),[draft,setDraft]=useState('');
+ async function send(){if(!target||!draft.trim())return;setBusy(target);setError('');try{const {data:u}=await supabase.auth.getUser();if(!u.user)throw new Error('Sign in again');const {data:s,error:e}=await supabase.from('suggestions').insert({user_id:target,note:draft.trim(),category:'Admin Message',status:'in_progress'}).select('id').single();if(e)throw e;const {error:m}=await sendConversationMessage(s.id,u.user.id,draft.trim(),null);if(m)throw m;setTarget('');setDraft('');setMessage('Private message sent.')}catch(e:any){setError(e.message)}finally{setBusy('')}}
  const [rows,setRows]=useState<any[]>([]),[error,setError]=useState(''),[busy,setBusy]=useState(''),[showReviewed,setShowReviewed]=useState(false),[message,setMessage]=useState('');
  async function load(){
   const {data,error}=await supabase.from('dropin_account_approvals').select('user_id,status,created_at,preferred_sport,preferred_location,profiles!dropin_account_approvals_user_id_fkey(full_name,email)').order('created_at',{ascending:false});
@@ -61,7 +64,7 @@ export function AdminDropinAccountApprovals(){
   <p>Approve only players you recognize. Check both the name and email, including possible duplicate accounts. This grants booking access; existing account bans still apply.</p>
   <label><input type="checkbox" checked={showReviewed} onChange={e=>setShowReviewed(e.target.checked)}/> Show approved and rejected accounts</label>
   {error&&<p className="error" role="alert">{error}</p>}{message&&<p role="status">{message}</p>}
-  {visible.map(r=><div className="playerrow" key={r.user_id}><div><strong>{r.profiles?.full_name||'Player'}</strong><div>{r.profiles?.email}</div><div><strong>Sport:</strong> {r.preferred_sport||'Not provided'}</div><div><strong>Location:</strong> {r.preferred_location||'Not provided'}</div><div className="muted">{r.status} · Requested {new Date(r.created_at).toLocaleString('en-CA',{timeZone:'America/Toronto'})}</div></div><div className="rowactions">{r.status!=='approved'&&<button disabled={!!busy} onClick={()=>review(r.user_id,'approved')}>Approve Player</button>}{r.status!=='rejected'&&<button className="outline danger" disabled={!!busy} onClick={()=>review(r.user_id,'rejected')}>{r.status==='approved'?'Revoke access':'Reject Player'}</button>}</div></div>)}
+  {target&&<div className="notice"><label>Private message<textarea value={draft} onChange={e=>setDraft(e.target.value)}/></label><button disabled={!!busy||!draft.trim()} onClick={send}>Send private message</button><button className="outline" onClick={()=>setTarget('')}>Cancel</button></div>}{visible.map(r=><div className="playerrow" key={r.user_id}><div><strong>{r.profiles?.full_name||'Player'}</strong><div>{r.profiles?.email}</div><div><strong>Sport:</strong> {r.preferred_sport||'Not provided'}</div><div><strong>Location:</strong> {r.preferred_location||'Not provided'}</div><div className="muted">{r.status} · Requested {new Date(r.created_at).toLocaleString('en-CA',{timeZone:'America/Toronto'})}</div></div><div className="rowactions"><button className="outline" onClick={()=>{setTarget(r.user_id);setDraft('')}}>Send Message</button>{r.status!=='approved'&&<button disabled={!!busy} onClick={()=>review(r.user_id,'approved')}>Approve Player</button>}{r.status!=='rejected'&&<button className="outline danger" disabled={!!busy} onClick={()=>review(r.user_id,'rejected')}>{r.status==='approved'?'Revoke access':'Reject Player'}</button>}</div></div>)}
   {!visible.length&&!error&&<p className="muted">No pending Drop-in account requests.</p>}
  </section>;
 }
