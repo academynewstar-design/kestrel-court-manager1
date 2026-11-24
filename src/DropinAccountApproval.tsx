@@ -23,19 +23,19 @@ export function useDropinAccountApproval(profile:any){
 export function DropinApprovalGate({userId,approval,children}:{userId:string;approval:ReturnType<typeof useDropinAccountApproval>;children:ReactNode}){
  const [busy,setBusy]=useState(false),[error,setError]=useState('');
  const [sport,setSport]=useState(''),[location,setLocation]=useState('');
- const needsDetails=approval.status==='none'||(approval.status==='pending'&&(!approval.preferences?.preferred_sport||!approval.preferences?.preferred_location));
+ const needsDetails=approval.status==='none'||approval.status==='rejected'||(approval.status==='pending'&&(!approval.preferences?.preferred_sport||!approval.preferences?.preferred_location));
  async function request(){
   if(!sport||!location)return;
   setBusy(true);setError('');
   const details={preferred_sport:sport,preferred_location:location};
-  const result=approval.status==='pending'?await supabase.from('dropin_account_approvals').update(details).eq('user_id',userId).eq('status','pending').select('user_id').single():await supabase.from('dropin_account_approvals').insert({user_id:userId,...details});
+  const result=(approval.status==='pending'||approval.status==='rejected')?await supabase.from('dropin_account_approvals').update({...details,status:'pending',reviewed_at:null,reviewed_by:null}).eq('user_id',userId).eq('status',approval.status).select('user_id').single():await supabase.from('dropin_account_approvals').insert({user_id:userId,...details});
   if(result.error&&result.error.code!=='23505')setError(result.error.message);
   await approval.refresh();setBusy(false);
  }
  if(approval.approved)return <>{children}</>;
  return <section className="card form"><h2>Player account approval</h2>
   <p>Admin must recognize and approve you before you can join games, waitlists or request group spots. Approval is needed once for this account, across all sports and locations.</p>
-  {approval.status==='loading'?<p role="status">Checking approval…</p>:approval.status==='pending'&&!needsDetails?<p role="status">⏳ Pending Admin approval. Please wait while Admin checks your name and email.</p>:approval.status==='rejected'?<p role="status">Your Drop-in request was not approved. Use Messages to contact Admin.</p>:needsDetails?<><label>Sport<select required value={sport} onChange={e=>setSport(e.target.value)}><option value="">Choose sport</option>{['Badminton','Volleyball','Soccer','Basketball','Pickleball'].map(v=><option key={v}>{v}</option>)}</select></label><label>Preferred location<select required value={location} onChange={e=>setLocation(e.target.value)}><option value="">Choose location</option>{['Ajax','Brampton','Etobicoke','Hamilton','Kitchener','London','Mississauga','Niagara Falls','Oakville','Toronto'].map(v=><option key={v}>{v}</option>)}</select></label><button disabled={busy||!sport||!location} onClick={request}>{busy?'Submitting…':approval.status==='pending'?'Complete approval request':'Request Admin approval'}</button></>:null}
+  {approval.status==='loading'?<p role="status">Checking approval…</p>:approval.status==='pending'&&!needsDetails?<p role="status">⏳ Pending Admin approval. Please wait while Admin checks your name and email.</p>:needsDetails?<>{approval.status==='rejected'&&<p>Your previous request was not approved. You may submit a new request or contact Admin below.</p>}<label>Sport<select required value={sport} onChange={e=>setSport(e.target.value)}><option value="">Choose sport</option>{['Badminton','Volleyball','Soccer','Basketball','Pickleball'].map(v=><option key={v}>{v}</option>)}</select></label><label>Preferred location<select required value={location} onChange={e=>setLocation(e.target.value)}><option value="">Choose location</option>{['Ajax','Brampton','Etobicoke','Hamilton','Kitchener','London','Mississauga','Niagara Falls','Oakville','Toronto'].map(v=><option key={v}>{v}</option>)}</select></label><button disabled={busy||!sport||!location} onClick={request}>{busy?'Submitting…':approval.status==='pending'?'Complete approval request':approval.status==='rejected'?'Submit new approval request':'Request Admin approval'}</button></>:null}
   {(error||approval.error)&&<p className="error" role="alert">{error||approval.error}</p>}
   <button className="outline" disabled={busy} onClick={approval.refresh}>Check approval</button>
   <p className="muted">Your existing bookings remain available above for payments and cancellations.</p>
