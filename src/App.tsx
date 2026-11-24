@@ -155,7 +155,7 @@ function PlayerAvailabilityCalendar({onBrowseGames}:{onBrowseGames:()=>void}){
 }
 function AccountAccessGate({profile,onLogout}:{profile:any,onLogout:()=>void}){
  const approval=useDropinAccountApproval(profile);
- if(!approval.approved)return <><header><div className="brandwrap"><strong>KESTREL SPORTS CLUB</strong></div><button onClick={onLogout}>Sign out</button></header><main><DropinApprovalGate userId={profile.id} approval={approval}><></></DropinApprovalGate></main></>;
+ if(!approval.approved)return <><header><div className="brandwrap"><strong>KESTREL SPORTS CLUB</strong></div><button onClick={onLogout}>Sign out</button></header><main><DropinApprovalGate userId={profile.id} approval={approval}><></></DropinApprovalGate><SuggestionForm profile={profile}/></main></>;
  return <PlayerDashboard profile={profile} onLogout={onLogout}/>;
 }
 
