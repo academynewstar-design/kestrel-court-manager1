@@ -6,6 +6,7 @@ type Props={
  sports:string[];
  cities:string[];
  locations:string[];
+ locationSchedule?:Record<string,string>;
  onChange:(selection:GameSelection)=>void;
  children:ReactNode;
 };
@@ -13,7 +14,7 @@ type Props={
 const sportIcon=(sport:string)=>({volleyball:'🏐',badminton:'🏸',soccer:'⚽',basketball:'🏀',pickleball:'🏓'}[sport]||'🎯');
 
 /** Show one choice at a time; the dashboard owns the selected session filters. */
-export default function GamePicker({selection,sports,cities,locations,onChange,children}:Props){
+export default function GamePicker({selection,sports,cities,locations,locationSchedule={},onChange,children}:Props){
  const{sport,city,location}=selection;
  const step=!sport?1:!city?2:!location||!locations.includes(location)?3:4;
  const title=['Choose your sport','Choose your city','Choose your location','Available sessions'][step-1];
@@ -41,7 +42,7 @@ export default function GamePicker({selection,sports,cities,locations,onChange,c
   </div>
   {step===1&&<>{sports.length?<div className="sport-choices">{sports.map(name=><button key={name} className={'sport-choice sport-'+name} onClick={()=>onChange({sport:name,city:'',location:''})}><span className="sport-icon" aria-hidden="true">{sportIcon(name)}</span><span>{name}</span></button>)}</div>:<p>No Drop-in sports are currently available. Check back soon.</p>}</>}
   {step===2&&<>{cities.length?<div className="picker-choices">{cities.map(name=><button className="outline" key={name} onClick={()=>onChange({...selection,city:name,location:''})}><span className="picker-place-icon" aria-hidden="true">📍</span><span className="picker-choice-label">{name}</span><span className="picker-choice-arrow" aria-hidden="true">→</span></button>)}</div>:<p>No cities are currently available for this sport. Choose All Sports to try another.</p>}</>}
-  {step===3&&<>{locations.length?<div className="picker-choices picker-locations">{locations.map(name=><button className="outline" key={name} onClick={()=>onChange({...selection,location:name})}><span className="picker-place-icon" aria-hidden="true">📍</span><span className="picker-choice-label">{name}</span><span className="picker-choice-arrow" aria-hidden="true">→</span></button>)}</div>:<p>No locations are currently available in this city. Choose Back to try another city.</p>}</>}
+  {step===3&&<>{locations.length?<div className="picker-choices picker-locations">{locations.map(name=><button className="outline" key={name} onClick={()=>onChange({...selection,location:name})}><span className="picker-place-icon" aria-hidden="true">📍</span><span className="picker-choice-label">{name}{locationSchedule[name]&&<span style={{display:'block',fontSize:'0.82em',fontWeight:500,marginTop:4}}>{locationSchedule[name]}</span>}</span><span className="picker-choice-arrow" aria-hidden="true">→</span></button>)}</div>:<p>No locations are currently available in this city. Choose Back to try another city.</p>}</>}
   {step===4&&<><p className="muted picker-session-help">Book yourself and optionally add guests. No group approval needed.</p><div className="picker-session-list">{children}</div></>}
  </section>;
 }
