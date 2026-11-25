@@ -17,7 +17,7 @@ export function useDropinAccountApproval(profile:any){
    setStatus(error?'error':data?.status||(previouslyApproved?'approved':'none'));
   }catch(e:any){setError(e.message||'Unable to check approval. Please try again.');setStatus('error')}
  }
- useEffect(()=>{setStatus('loading');refresh();const timer=setInterval(refresh,30000);return()=>clearInterval(timer)},[profile.id,exempt]);
+ useEffect(()=>{setStatus('loading');refresh();const timer=setInterval(refresh,5000);return()=>clearInterval(timer)},[profile.id,exempt]);
  return {status,error,refresh,preferences,approved:status==='approved'};
 }
 
@@ -25,21 +25,22 @@ export function DropinApprovalGate({userId,approval,children}:{userId:string;app
  const [busy,setBusy]=useState(false),[error,setError]=useState('');
  const [sport,setSport]=useState(''),[location,setLocation]=useState('');
  const needsDetails=approval.status==='none'||approval.status==='rejected'||(approval.status==='pending'&&(!approval.preferences?.preferred_sport||!approval.preferences?.preferred_location));
- async function request(){
-  if(!sport||!location)return;
+ async function request(city:string,game:string){
+  if(!city||!game||busy)return;
   setBusy(true);setError('');
-  const details={preferred_sport:sport,preferred_location:location};
-  const result=(approval.status==='pending'||approval.status==='rejected')?await supabase.from('dropin_account_approvals').update({...details,status:'pending',reviewed_at:null,reviewed_by:null}).eq('user_id',userId).eq('status',approval.status).select('user_id').single():await supabase.from('dropin_account_approvals').insert({user_id:userId,...details});
-  if(result.error&&result.error.code!=='23505')setError(result.error.message);
-  await approval.refresh();setBusy(false);
+  try{
+   const details={preferred_sport:game,preferred_location:city};
+   const result=(approval.status==='pending'||approval.status==='rejected')?await supabase.from('dropin_account_approvals').update({...details,status:'pending',reviewed_at:null,reviewed_by:null}).eq('user_id',userId).eq('status',approval.status).select('user_id').single():await supabase.from('dropin_account_approvals').insert({user_id:userId,...details});
+   if(result.error&&result.error.code!=='23505')throw result.error;
+   await approval.refresh();
+  }catch(e:any){setError(e.message||'Unable to submit request. Please retry.')}finally{setBusy(false)}
  }
  if(approval.approved)return <>{children}</>;
- return <section className="card form"><h2>Player account approval</h2>
-  <p>Admin must recognize and approve you before you can join games, waitlists or request group spots. Approval is needed once for this account, across all sports and locations.</p>
-  {approval.status==='loading'?<p role="status">Checking approval…</p>:approval.status==='pending'&&!needsDetails?<p role="status">⏳ Pending Admin approval. Please wait while Admin checks your name and email.</p>:needsDetails?<>{approval.status==='rejected'&&<p>Your previous request was not approved. You may submit a new request or contact Admin below.</p>}<label>Sport<select required value={sport} onChange={e=>setSport(e.target.value)}><option value="">Choose sport</option>{['Badminton','Volleyball','Soccer','Basketball','Pickleball'].map(v=><option key={v}>{v}</option>)}</select></label><label>Preferred location<select required value={location} onChange={e=>setLocation(e.target.value)}><option value="">Choose location</option>{['Ajax','Brampton','Etobicoke','Hamilton','Kitchener','London','Mississauga','Niagara Falls','Oakville','Toronto'].map(v=><option key={v}>{v}</option>)}</select></label><button disabled={busy||!sport||!location} onClick={request}>{busy?'Submitting…':approval.status==='pending'?'Complete approval request':approval.status==='rejected'?'Submit new approval request':'Request Admin approval'}</button></>:null}
-  {(error||approval.error)&&<p className="error" role="alert">{error||approval.error}</p>}
-  <button className="outline" disabled={busy} onClick={approval.refresh}>Check approval</button>
-  <p className="muted">Your existing bookings remain available above for payments and cancellations.</p>
+ const tile={aspectRatio:'1 / 1',minWidth:0,display:'flex',flexDirection:'column' as const,justifyContent:'center',alignItems:'center',gap:12,border:'1px solid #cbd5e1',borderRadius:16,padding:12,background:'var(--card, #fff)',color:'#172554'};
+ return <section className="card form" style={{maxWidth:480,margin:'24px auto',textAlign:'center'}}>
+ <style>{'@keyframes kestrelApprovalBounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-28px)}} @media(prefers-reduced-motion:reduce){.kestrel-approval-ball{animation:none!important}}'}</style>
+ {approval.status==='loading'?<p role="status">Checking approval…</p>:busy||(approval.status==='pending'&&!needsDetails)?<div role="status" style={{padding:'36px 8px'}}><div className="kestrel-approval-ball" aria-hidden="true" style={{fontSize:48,animation:'kestrelApprovalBounce 1s ease-in-out infinite'}}>🏐</div><h2>{busy?'Submitting your request…':'Your request will be approved shortly.'}</h2><p>{busy?'Please wait.':'Waiting for admin approval. This screen will update automatically.'}</p></div>:needsDetails?<><h2>Join Kestrel Sports</h2>{approval.status==='rejected'&&<p>Your previous request was not approved. You may submit a new request.</p>}<div style={{display:'grid',gridTemplateColumns:'repeat(2,minmax(0,1fr))',gap:12}}><label style={tile}><span aria-hidden="true" style={{fontSize:32}}>📍</span><strong>Choose city</strong><select aria-label="Choose city" value={location} onChange={e=>{const v=e.target.value;setLocation(v);if(v&&sport)void request(v,sport)}} style={{width:'100%',minWidth:0}}><option value="">Select city</option>{['Ajax','Brampton','Etobicoke','Hamilton','Kitchener','London','Mississauga','Niagara Falls','Oakville','Toronto'].map(v=><option key={v}>{v}</option>)}</select></label><label style={tile}><span aria-hidden="true" style={{fontSize:32}}>🏸</span><strong>Choose sport</strong><select aria-label="Choose sport" value={sport} onChange={e=>{const v=e.target.value;setSport(v);if(v&&location)void request(location,v)}} style={{width:'100%',minWidth:0}}><option value="">Select sport</option>{['Badminton','Volleyball','Soccer','Basketball','Pickleball'].map(v=><option key={v}>{v}</option>)}</select></label></div>{error&&sport&&location&&<button onClick={()=>request(location,sport)}>Retry request</button>}</>:<button onClick={approval.refresh}>Retry approval check</button>}
+ {(error||approval.error)&&<p className="error" role="alert">{error||approval.error}</p>}
  </section>;
 }
 
