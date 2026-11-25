@@ -155,7 +155,11 @@ function PlayerAvailabilityCalendar({onBrowseGames}:{onBrowseGames:()=>void}){
 }
 function AccountAccessGate({profile,onLogout}:{profile:any,onLogout:()=>void}){
  const approval=useDropinAccountApproval(profile);
- if(!approval.approved)return <><header><div className="brandwrap"><strong>KESTREL SPORTS CLUB</strong></div><button onClick={onLogout}>Sign out</button></header><main><DropinApprovalGate userId={profile.id} approval={approval}><></></DropinApprovalGate><SuggestionForm profile={profile}/></main></>;
+ const waited=useRef(false);
+ const [continued,setContinued]=useState(false);
+ useEffect(()=>{if(approval.status==='pending'||approval.status==='none'||approval.status==='rejected'){waited.current=true;setContinued(false)}},[approval.status]);
+ const celebration=approval.approved&&waited.current&&!continued;
+ if(!approval.approved||celebration)return <><header><div className="brandwrap"><strong>KESTREL SPORTS CLUB</strong></div><button onClick={onLogout}>Sign out</button></header><main>{celebration?<section className="card" style={{maxWidth:480,margin:'24px auto',textAlign:'center',padding:32}}><style>{'@keyframes kestrelApprovedGlow{50%{box-shadow:0 0 36px #22c55e88}} @media(prefers-reduced-motion:reduce){.kestrel-approved-light{animation:none!important}}'}</style><div className="kestrel-approved-light" aria-hidden="true" style={{margin:'0 auto 20px',width:90,height:90,borderRadius:'50%',background:'#15803d',color:'white',display:'grid',placeItems:'center',fontSize:52,animation:'kestrelApprovedGlow 1.4s infinite'}}>✓</div><h2 role="status">Approved!</h2><p>Welcome to Kestrel Sports. You can now book your games.</p><button onClick={()=>setContinued(true)}>Continue to Drop-in</button></section>:<><DropinApprovalGate userId={profile.id} approval={approval}><></></DropinApprovalGate>{approval.status==='rejected'&&<SuggestionForm profile={profile}/>}</>}</main></>;
  return <PlayerDashboard profile={profile} onLogout={onLogout}/>;
 }
 
