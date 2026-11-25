@@ -49,10 +49,21 @@ export function AdminDropinAccountApprovals(){
  async function send(){if(!target||!draft.trim())return;setBusy(target);setError('');try{const {data:u}=await supabase.auth.getUser();if(!u.user)throw new Error('Sign in again');const {data:s,error:e}=await supabase.from('suggestions').insert({user_id:target,note:draft.trim(),category:'Admin Message',status:'in_progress'}).select('id').single();if(e)throw e;const {error:m}=await sendConversationMessage(s.id,u.user.id,draft.trim(),null);if(m)throw m;setTarget('');setDraft('');setMessage('Private message sent.')}catch(e:any){setError(e.message)}finally{setBusy('')}}
  const [rows,setRows]=useState<any[]>([]),[error,setError]=useState(''),[busy,setBusy]=useState(''),[showReviewed,setShowReviewed]=useState(false),[message,setMessage]=useState('');
  async function load(){
-  const {data,error}=await supabase.from('dropin_account_approvals').select('user_id,status,created_at,preferred_sport,preferred_location,profiles!dropin_account_approvals_user_id_fkey(full_name,email)').order('created_at',{ascending:false});
+  const fields='user_id,status,created_at,preferred_sport,preferred_location,profiles!dropin_account_approvals_user_id_fkey(full_name,email)';
+  const pending=await supabase.from('dropin_account_approvals').select(fields).eq('status','pending').order('created_at',{ascending:false});
+  let data=pending.data,error=pending.error;
+  if(showReviewed&&!error){
+   const reviewed:any[]=[];
+   for(let offset=0;;offset+=500){
+    const page=await supabase.from('dropin_account_approvals').select(fields).neq('status','pending').order('created_at',{ascending:false}).order('user_id').range(offset,offset+499);
+    if(page.error){error=page.error;break}
+    reviewed.push(...(page.data||[]));if((page.data||[]).length<500)break;
+   }
+   data=[...(data||[]),...reviewed];
+  }
   if(error)setError(error.message);else{setRows(data||[]);setError('')}
  }
- useEffect(()=>{load();const timer=setInterval(load,30000);return()=>clearInterval(timer)},[]);
+ useEffect(()=>{load();const timer=setInterval(load,5000);return()=>clearInterval(timer)},[showReviewed]);
  async function review(userId:string,status:string){
   setBusy(userId);setError('');setMessage('');
   const {data,error}=await supabase.from('dropin_account_approvals').update({status}).eq('user_id',userId).select('user_id');
