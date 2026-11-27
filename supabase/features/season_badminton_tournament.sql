@@ -56,6 +56,7 @@ begin
     or new.partner_level not in ('low_intermediate','intermediate') then
     raise exception 'Only Low Intermediate and Intermediate levels are eligible';
   end if;
+  if new.player_level<>new.partner_level then raise exception 'Both players must enter the same level division'; end if;
   if not public.is_admin() and not exists(select 1 from public.profiles p where p.id=new.player_id and coalesce(p.id=auth.uid() or p.managed_by=auth.uid(),false)) then
     raise exception 'Choose your own name or a Season player in your family account';
   end if;

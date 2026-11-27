@@ -24,7 +24,7 @@ describe('Season badminton tournament',()=>{
  it('requires two Season identities, both allowed levels and partner consent',async()=>{
   const user=userEvent.setup();render(<BadmintonTournamentCard event={event} profile={profile} onSaved={saved}/>);
   const own=await screen.findByLabelText('Your name');
-  expect(screen.getByText(/Maximum 20 Intermediate players and 20 Low Intermediate/)).toBeTruthy();
+  expect(screen.getByText(/Maximum 10 Intermediate pairs and 10 Low Intermediate pairs/)).toBeTruthy();
   expect(screen.getByText(/\$25 per player/)).toBeTruthy();
   expect(screen.queryByRole('option',{name:'Advanced'})).toBeNull();
   expect((screen.getByRole('button',{name:'Register badminton pair'}) as HTMLButtonElement).disabled).toBe(true);
@@ -32,11 +32,10 @@ describe('Season badminton tournament',()=>{
   expect(Array.from((screen.getByLabelText('Partner name') as HTMLSelectElement).options).some(o=>o.value==='owner')).toBe(false);
   await user.selectOptions(screen.getByLabelText('Your level'),'intermediate');
   await user.selectOptions(screen.getByLabelText('Partner name'),'partner');
-  await user.selectOptions(screen.getByLabelText('Partner level'),'low_intermediate');
   await user.click(screen.getByRole('checkbox'));
   await user.click(screen.getByRole('button',{name:'Register badminton pair'}));
   await waitFor(()=>expect(saved).toHaveBeenCalled());
-  expect(mocks.insert).toHaveBeenCalledWith(expect.objectContaining({player_id:'owner',partner_id:'partner',player_level:'intermediate',partner_level:'low_intermediate',entry_kind:'team',status:'registered'}));
+  expect(mocks.insert).toHaveBeenCalledWith(expect.objectContaining({player_id:'owner',partner_id:'partner',player_level:'intermediate',partner_level:'intermediate',entry_kind:'team',status:'registered'}));
   expect(saved.mock.calls[0][0]).toContain('waitlist');
  });
  it('blocks registration for a Drop-in account absent from eligible Season identities',async()=>{

@@ -34,6 +34,7 @@ assert.equal((await status(1)).entries[0].allocation_status,'waitlist');
 await assert.rejects(()=>entry(3,46),/Both players must be approved Kestrel Season players/);
 await assert.rejects(()=>entry(3,4,'advanced'),/Only Low Intermediate and Intermediate/);
 await assert.rejects(()=>entry(3,3),/two different Season players/);
+await assert.rejects(()=>asPlayer(3,()=>db.query("insert into tournament_entries(event_id,user_id,entry_kind,team_name,player_names,eligibility_confirmed,player_id,partner_id,player_level,partner_level) values($1,$2,'team','Pair',array['Aaa','Bbb'],true,$2,$3,'intermediate','low_intermediate')",[eid,uid(3),uid(4)])),/same level division/);
 await assert.rejects(()=>entry(3,2),/already registered/);
 await assert.rejects(()=>asPlayer(3,()=>db.query(`insert into tournament_entries(event_id,user_id,entry_kind,team_name,player_names,eligibility_confirmed,player_id,partner_id,player_level,partner_level) values($1,$2,'team','Pair',array['Aaa','Bbb'],true,$3,$4,'intermediate','intermediate')`,[eid,uid(3),uid(5),uid(6)])),/Choose your own name/);
 const directory=await asPlayer(1,()=>db.query('select * from public.get_tournament_season_players()'));
