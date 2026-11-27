@@ -9,7 +9,7 @@ vi.mock('../src/lib/supabase',()=>({supabase:{from:mock.from}}));
 const event={id:1,title:'Brampton Basketball Tournament',city:'Brampton',sports:{name:'basketball'},starts_at:'2099-10-30T22:00:00Z',individual_fee:7,team_fee:30,minimum_age:16,location_details:'Inbox for location details',payment_email:null,status:'open'};
 let entries:any[]=[];
 let failure:string|null=null;
-function query(table:string){let mutation=false;const q:any={select:()=>q,eq:()=>q,order:()=>q,single:()=>q,
+function query(table:string){let mutation=false;const q:any={select:()=>q,eq:()=>q,or:()=>q,order:()=>q,single:()=>q,
  insert:(value:any)=>{mutation=true;mock.insert(value);if(!failure)entries=[{...value,id:1,payment_status:'unpaid'}];return q},
  update:(value:any)=>{mutation=true;mock.update(value);if(!failure)entries=entries.map(e=>({...e,...value}));return q},
  then:(resolve:any)=>Promise.resolve({data:mutation?{id:1}:table==='tournament_events'?[event]:entries,error:failure?{message:failure}:null}).then(resolve)};return q;}

@@ -1,9 +1,12 @@
+import BadmintonTournamentCard from './BadmintonTournament';
 import {useEffect,useState} from 'react';
 import {supabase} from './lib/supabase';
 
-type Event={id:number;title:string;city:string;starts_at:string;individual_fee:number;team_fee:number;minimum_age:number;location_details:string;payment_email:string|null;status:string;sports:{name:string}};
-type Entry={id:number;event_id:number;user_id:string;entry_kind:'individual'|'team';team_name:string|null;player_names:string[];status:string;payment_status:string;profiles?:{full_name:string;email:string}};
-const eventSelect='id,title,city,starts_at,individual_fee,team_fee,minimum_age,location_details,payment_email,status,sports(name)';
+export type TournamentEvent={id:number;title:string;city:string;starts_at:string;individual_fee:number;team_fee:number;minimum_age:number;location_details:string;payment_email:string|null;status:string;registration_format?:string;sports:{name:string}};
+export type TournamentEntry={id:number;event_id:number;user_id:string;entry_kind:'individual'|'team';team_name:string|null;player_names:string[];status:string;payment_status:string;player_id?:string;partner_id?:string;player_level?:string;partner_level?:string;profiles?:{full_name:string;email:string}};
+type Event=TournamentEvent;
+type Entry=TournamentEntry;
+const eventSelect='id,title,city,starts_at,individual_fee,team_fee,minimum_age,location_details,payment_email,status,registration_format,sports(name)';
 const currency=(v:number)=>new Intl.NumberFormat('en-CA',{style:'currency',currency:'CAD',maximumFractionDigits:0}).format(v);
 const eventTime=(v:string)=>new Intl.DateTimeFormat('en-CA',{timeZone:'America/Toronto',weekday:'long',year:'numeric',month:'long',day:'numeric',hour:'numeric',minute:'2-digit'}).format(new Date(v))+' (Toronto time)';
 export const entryFee=(event:Pick<Event,'individual_fee'|'team_fee'>,kind:Entry['entry_kind'])=>kind==='team'?event.team_fee:event.individual_fee;
@@ -12,15 +15,15 @@ export default function Tournaments({profile}:{profile:{id:string;full_name:stri
  const[events,setEvents]=useState<Event[]>([]),[entries,setEntries]=useState<Entry[]>([]);
  const[loading,setLoading]=useState(true),[error,setError]=useState(''),[message,setMessage]=useState('');
  async function load(){
-  const[a,b]=await Promise.all([supabase.from('tournament_events').select(eventSelect).order('starts_at'),supabase.from('tournament_entries').select('*').eq('user_id',profile.id)]);
+  const[a,b]=await Promise.all([supabase.from('tournament_events').select(eventSelect).order('starts_at'),supabase.from('tournament_entries').select('*').or(`user_id.eq.${profile.id},player_id.eq.${profile.id},partner_id.eq.${profile.id}`)]);
   setError(a.error?.message||b.error?.message||'');setEvents((a.data||[]) as unknown as Event[]);setEntries(b.data||[]);setLoading(false);
  }
  useEffect(()=>{load()},[profile.id]);
- return <details className="card upcoming-games" id="tournaments"><summary><strong>🏀 Basketball / Tournaments</strong><span className="muted">Expand for details &amp; registration</span></summary><p>Register individually or enter your team. Season and Drop-in players can use their existing account.</p>
+ return <details className="card upcoming-games" id="tournaments"><summary><strong>🏆 Tournaments</strong><span className="muted">Expand for details &amp; registration</span></summary><p>Choose a tournament below to view its eligibility rules and register.</p>
   <button className="outline" onClick={load}>Refresh tournaments</button>
   {loading&&<p role="status">Loading tournaments…</p>}{error&&<p role="alert" className="error">Unable to load tournaments: {error}</p>}{message&&<p role="status">{message}</p>}
   {!loading&&!error&&events.length===0&&<p>No tournaments are listed yet.</p>}
-  {events.map(event=><TournamentCard key={event.id} event={event} profile={profile} entry={entries.find(e=>e.event_id===event.id)} onSaved={async(text)=>{setMessage(text);await load()}}/>)}
+  {events.map(event=>event.registration_format==='season_badminton_doubles'?<BadmintonTournamentCard key={event.id} event={event} profile={profile} entry={entries.find(e=>e.event_id===event.id)} onSaved={async(text)=>{setMessage(text);await load()}}/>:<TournamentCard key={event.id} event={event} profile={profile} entry={entries.find(e=>e.event_id===event.id)} onSaved={async(text)=>{setMessage(text);await load()}}/>)}
  </details>;
 }
 function TournamentCard({event,entry,profile,onSaved}:{event:Event;entry?:Entry;profile:{id:string;full_name:string};onSaved:(text:string)=>Promise<void>}){
@@ -62,16 +65,18 @@ function TournamentCard({event,entry,profile,onSaved}:{event:Event;entry?:Entry;
 
 export function AdminTournaments(){
  const[events,setEvents]=useState<Event[]>([]),[entries,setEntries]=useState<Entry[]>([]),[selected,setSelected]=useState(''),[email,setEmail]=useState(''),[status,setStatus]=useState('open'),[message,setMessage]=useState(''),[busy,setBusy]=useState(false),[loading,setLoading]=useState(true);
- async function load(){const[a,b]=await Promise.all([supabase.from('tournament_events').select(eventSelect).order('starts_at'),supabase.from('tournament_entries').select('*,profiles(full_name,email)').order('created_at')]);setMessage(a.error?.message||b.error?.message||'');setEvents((a.data||[]) as unknown as Event[]);setEntries(b.data||[]);setLoading(false)}
+ async function load(){const[a,b]=await Promise.all([supabase.from('tournament_events').select(eventSelect).order('starts_at'),supabase.from('tournament_entries').select('*,profiles!user_id(full_name,email)').order('created_at')]);setMessage(a.error?.message||b.error?.message||'');setEvents((a.data||[]) as unknown as Event[]);setEntries(b.data||[]);setLoading(false)}
  useEffect(()=>{load()},[]);
  const event=events.find(e=>String(e.id)===selected),list=entries.filter(e=>String(e.event_id)===selected);
+ const[allocations,setAllocations]=useState<{entry_id:number;allocation_status:string}[]>([]);
+ useEffect(()=>{let active=true;setAllocations([]);if(event?.registration_format==='season_badminton_doubles')supabase.rpc('get_badminton_tournament_status',{p_event_id:event.id}).then(({data,error})=>{if(!active)return;if(error)setMessage(error.message);else setAllocations(data?.entries||[])});return()=>{active=false}},[selected,entries]);
  async function updateEntry(entry:Entry,values:Partial<Entry>){setBusy(true);const{error}=await supabase.from('tournament_entries').update(values).eq('id',entry.id).select('id').single();if(error)setMessage(error.message);else{await load();setMessage('Tournament entry updated.')}setBusy(false)}
  async function saveSettings(){if(!event)return;setBusy(true);const{error}=await supabase.from('tournament_events').update({payment_email:email.trim()||null,status}).eq('id',event.id).select('id').single();if(error)setMessage(error.message);else{await load();setMessage('Tournament settings saved.')}setBusy(false)}
- return <section className="card"><h2>🏀 Tournament registrations</h2><button className="outline" onClick={load}>Refresh tournament entries</button>{loading&&<p>Loading tournaments…</p>}{message&&<p role="status">{message}</p>}
+ return <section className="card"><h2>🏆 Tournament registrations</h2><button className="outline" onClick={load}>Refresh tournament entries</button>{loading&&<p>Loading tournaments…</p>}{message&&<p role="status">{message}</p>}
   <label>Tournament<select value={selected} onChange={e=>{setSelected(e.target.value);const event=events.find(x=>String(x.id)===e.target.value);setEmail(event?.payment_email||'');setStatus(event?.status||'open')}}><option value="">Choose tournament</option>{events.map(e=><option key={e.id} value={e.id}>{e.title} · {eventTime(e.starts_at)}</option>)}</select></label>
   {event&&<><form onSubmit={e=>{e.preventDefault();saveSettings()}}><label>Tournament payment email<input type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="Payment recipient"/></label><label>Registration status<select value={status} onChange={e=>setStatus(e.target.value)}><option value="open">Open</option><option value="closed">Closed</option><option value="cancelled">Tournament cancelled</option></select></label><button disabled={busy}>Save tournament settings</button></form>
    <p>{list.filter(e=>e.status==='registered'&&e.entry_kind==='team').length} team entries · {list.filter(e=>e.status==='registered'&&e.entry_kind==='individual').length} individual entries · {list.filter(e=>e.status==='registered'&&e.payment_status==='unpaid').length} unpaid entries</p>
-   {list.map(entry=><article className="notice" key={entry.id}><h3>{entry.entry_kind==='team'?entry.team_name:'Individual: '+entry.player_names[0]}</h3><p>Contact: {entry.profiles?.full_name} · {entry.profiles?.email}</p><p>Players: {entry.player_names.join(', ')}</p><p>{entry.status} · {currency(entryFee(event,entry.entry_kind))} · {entry.payment_status}</p><div className="rowactions"><button disabled={busy||entry.status!=='registered'} onClick={()=>updateEntry(entry,{payment_status:entry.payment_status==='paid'?'unpaid':'paid'})}>{entry.payment_status==='paid'?'Change to Unpaid':'Mark Paid'}</button><button className="outline" disabled={busy} onClick={()=>{if(window.confirm('Change this tournament entry status?'))updateEntry(entry,{status:entry.status==='registered'?'cancelled':'registered'})}}>{entry.status==='registered'?'Cancel entry':'Restore entry'}</button></div></article>)}
+   {list.map(entry=><article className="notice" key={entry.id}><h3>{entry.entry_kind==='team'?entry.team_name:'Individual: '+entry.player_names[0]}</h3><p>Contact: {entry.profiles?.full_name} · {entry.profiles?.email}</p><p>Players: {entry.player_names.join(', ')}</p>{event.registration_format==='season_badminton_doubles'&&<p>Levels: {entry.player_level==='low_intermediate'?'Low Intermediate':'Intermediate'} / {entry.partner_level==='low_intermediate'?'Low Intermediate':'Intermediate'}</p>}<p>{event.registration_format==='season_badminton_doubles'?(entry.status==='cancelled'?'Cancelled':allocations.find(a=>a.entry_id===entry.id)?.allocation_status||'Checking spot status…'):entry.status} · {currency(entryFee(event,entry.entry_kind))} · {entry.payment_status}</p><div className="rowactions"><button disabled={busy||entry.status!=='registered'} onClick={()=>updateEntry(entry,{payment_status:entry.payment_status==='paid'?'unpaid':'paid'})}>{entry.payment_status==='paid'?'Change to Unpaid':'Mark Paid'}</button><button className="outline" disabled={busy} onClick={()=>{if(window.confirm('Change this tournament entry status?'))updateEntry(entry,{status:entry.status==='registered'?'cancelled':'registered'})}}>{entry.status==='registered'?'Cancel entry':'Restore entry'}</button></div></article>)}
    {list.length===0&&<p>No tournament registrations yet.</p>}
   </>}
  </section>;
