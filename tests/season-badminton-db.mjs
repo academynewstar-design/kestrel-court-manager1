@@ -17,6 +17,7 @@ await db.exec(`
 await db.exec(readFileSync(root+'supabase/features/tournament_registration.sql','utf8'));
 await db.exec(readFileSync(root+'supabase/features/season_badminton_tournament.sql','utf8'));
 await db.exec(readFileSync(root+'supabase/features/season_badminton_tournament_event.sql','utf8'));
+await db.exec(readFileSync(root+'supabase/features/admin_delete_tournament.sql','utf8'));
 const uid=n=>'00000000-0000-4000-8000-'+String(n).padStart(12,'0');
 for(let n=1;n<=46;n++)await db.query('insert into profiles(id,full_name,player_type,player_type_status) values($1,$2,$3,$4)',[uid(n),'Player '+n,n===46?'dropin':'permanent','approved']);
 const eid=(await db.query("select id from tournament_events where slug='kestrel-season-badminton-2027-02-07'")).rows[0].id;
@@ -58,4 +59,13 @@ const unrelated=await asPlayer(45,()=>db.query('select id from tournament_entrie
 const attempted=await asPlayer(22,()=>db.query("update tournament_entries set status='cancelled' where user_id=$1 returning id",[uid(21)]));assert.equal(attempted.rows.length,0);
 await assert.rejects(()=>asPlayer(45,()=>db.exec('update kestrel_tournaments.allocations set confirmed=true')),/permission denied/);
 console.log('PASS: schema, event date and fees, Season identities, allowed levels, duplicate pairs, unpaid waitlist, both 20-player caps, paid waitlist promotion, participant privacy and allocation permissions.');
+await db.query("insert into profiles(id,full_name,player_type,player_type_status,is_admin) values($1,'Admin','dropin','approved',true)",[uid(99)]);
+const oldId=(await db.query("select id from tournament_events where slug='brampton-basketball-2026-10-30'")).rows[0].id;
+await asPlayer(99,()=>db.query("insert into tournament_entries(event_id,user_id,entry_kind,player_names,eligibility_confirmed,payment_status) values($1,$2,'individual',array['Player One'],true,'paid')",[oldId,uid(99)]));
+await assert.rejects(()=>asPlayer(1,()=>db.query('select public.admin_delete_tournament($1)',[oldId])),/Admin access required/);
+await asPlayer(99,()=>db.query('select public.admin_delete_tournament($1)',[oldId]));
+assert.equal((await asPlayer(1,()=>db.query('select id from tournament_events where id=$1',[oldId]))).rows.length,0);
+assert.equal((await asPlayer(99,()=>db.query("select id from tournament_events where id=$1 and deleted_at is null",[oldId]))).rows.length,0);
+assert.equal((await db.query("select payment_status from tournament_entries where event_id=$1",[oldId])).rows[0].payment_status,'paid');
+console.log('PASS: only admins can delete tournaments, deletion hides the event and retains payment history.');
 await db.close();
